@@ -3,6 +3,7 @@ import pygame
 
 from gym_racer.envs.utils import getMyLogger
 from gym_racer.envs.racer_car import RacerCar
+from gym_racer.envs.racer_map import RacerMap
 
 
 class RacerEnv(gym.Env):
@@ -12,7 +13,7 @@ class RacerEnv(gym.Env):
         """
         """
         logg = getMyLogger(f"c.{__class__.__name__}.__init__")
-        logg.debug(f"Start init for RacerEnv")
+        logg.info(f"Start init RacerEnv")
 
         # racing field dimensions
         self.field_wid = field_wid
@@ -42,9 +43,16 @@ class RacerEnv(gym.Env):
         # draw the field on the screen
         self.screen.blit(self.field, (0, 0))
 
+        # where the info will be
         self._setup_sidebar()
 
+        # setup the agent
         self.racer_car = RacerCar(100, 100)
+
+        # setup the road
+        self.racer_map = RacerMap(self.field_wid, self.field_hei)
+        # draw map on the field, it is static, so there is no need to redraw it every time
+        self.racer_map.draw(self.field)
 
         # add the car to the list of sprites to render
         self.allsprites = pygame.sprite.RenderPlain((self.racer_car))
@@ -56,7 +64,7 @@ class RacerEnv(gym.Env):
         # Execute one time step within the environment
         """
         logg = getMyLogger(f"c.{__class__.__name__}.step")
-        logg.debug(f"Start step {action}")
+        logg.info(f"Start env step, action: '{action}'")
 
         # TODO only if render is active
         self._update_display()
@@ -74,6 +82,9 @@ class RacerEnv(gym.Env):
     def _setup_sidebar(self):
         """
         """
+        logg = getMyLogger(f"c.{__class__.__name__}._setup_sidebar")
+        logg.info(f"Start _setup_sidebar")
+
         # setup fonts to display info
         self._setup_font()
 

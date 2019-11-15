@@ -14,7 +14,7 @@ from gym_racer.envs.utils import getMyLogger
 class RacerCar(Sprite):
     def __init__(self, pos_x, pos_y, direction=0):
         logg = logging.getLogger(f"c.{__name__}.__init__")
-        logg.debug(f"Start init RacerCar")
+        logg.info(f"Start init RacerCar")
         super().__init__()
 
         self.pos_x = pos_x
@@ -55,10 +55,10 @@ class RacerCar(Sprite):
         image.set_colorkey(colorkey, RLEACCEL)
         """
         logg = logging.getLogger(f"c.{__name__}._create_car_image")
-        logg.debug(f"Start _create_car_image")
+        logg.info(f"Start _create_car_image")
 
         # wheel dimensions
-        w_color = (80, 80, 80, 0)
+        w_color = (80, 80, 80)
         w_len = 7  # horizontal length of the wheel
         w_radius = 3
         w_wid = w_radius * 2
@@ -74,6 +74,9 @@ class RacerCar(Sprite):
         # create a surf just big enough for the car
         car_surf_size = (car_len + car_wid, car_wid + w_wid)
         car_surf = Surface(car_surf_size)
+        # convert the surface for fastest blitting
+        # same pixel format as the display Surface
+        car_surf = car_surf.convert()
 
         black = (0, 0, 0)
         car_surf.fill(black)
@@ -105,7 +108,7 @@ class RacerCar(Sprite):
         self._draw_oval(car_surf, w_top, w_left, w_wid, w_len, w_color)
 
         # body
-        body_color = (255, 0, 0, 128)
+        body_color = (255, 0, 0)
         self._draw_oval(car_surf, car_top, car_left, car_wid, car_len, body_color)
 
         # windshield
@@ -125,7 +128,7 @@ class RacerCar(Sprite):
             (wind_hpos + d1, wind_mid + wind_wid2 - 1),
             (wind_hpos + d2, wind_mid),
         ]
-        wind_color = (0, 255, 255, 0)
+        wind_color = (0, 255, 255)
         pygame.draw.polygon(car_surf, wind_color, wind_points)
 
         self.orig_image = car_surf
@@ -155,7 +158,7 @@ class RacerCar(Sprite):
         """Create rotated copies of the surface
         """
         logg = logging.getLogger(f"c.{__name__}._rotate_car_image")
-        logg.debug(f"Start _rotate_car_image")
+        logg.info(f"Start _rotate_car_image")
         if 360 % self.dir_step != 0:
             logg.warn(f"A dir_step that is not divisor of 360 is a bad idea")
 
