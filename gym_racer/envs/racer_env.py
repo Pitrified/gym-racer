@@ -63,11 +63,38 @@ class RacerEnv(gym.Env):
         # draw the field (with the map on it) on the background
         self.background.blit(self.field, (0, 0))
 
+        # create the surface for the sensor_array
+        self.sa_surf = pygame.Surface(self.field_size)
+        self.sa_surf = self.sa_surf.convert()
+
         # Define action and observation space TODO
 
     def step(self, action):
-        """
-        # Execute one time step within the environment
+        """Perform the action
+
+        left-rigth: change steering
+        up-down: accelerate/brake
+        combination of the above
+        do nothing
+ 
+        ----------
+        This method steps the game forward one step
+        Parameters
+        ----------
+        action : str
+            MAYBE should be int anyway
+        Returns
+        -------
+        ob, reward, episode_over, info : tuple
+            ob (object) :
+                an environment-specific object representing the
+                state of the environment.
+            reward (float) :
+                amount of reward achieved by the previous action.
+            episode_over (bool) :
+                whether it's time to reset the environment again.
+            info (dict) :
+                diagnostic information useful for debugging.
         """
         logg = getMyLogger(f"c.{__class__.__name__}.step")
         logg.info(f"Start env step, action: '{action}'")
@@ -78,20 +105,48 @@ class RacerEnv(gym.Env):
         # compute the reward for this action
         reward, done = self._compute_reward()
 
+        # get observation from sensor array
+        sa_collisions = self._collide_sensor_array()
+
         # draw the new state
-        self.render()
+        self.render(sa_collisions=sa_collisions)
+
+        return sa_collisions, reward, done, None
 
     def reset(self):
         """
         # Reset the state of the environment to an initial state
+
+        TODO pick a random Segment of the road and put the car there
         """
 
-    def render(self, mode="human", close=False):
+    def render(self, mode="human", close=False, sa_collisions=None):
         """
         # Render the environment to the screen
         """
+        logg = getMyLogger(f"c.{__class__.__name__}.render")
+        logg.debug(f"Start render")
+
         # TODO only if render is active
-        self._update_display()
+        if mode == "human":
+            # Draw Everything again, every frame
+            # the background already has the road and sidebar template drawn
+            self.screen.blit(self.background, (0, 0))
+
+            # draw all moving sprites (the car) on the screen
+            self.allsprites.draw(self.screen)
+            # if you draw on the field you can easily leave a track
+            #  allsprites.draw(field)
+
+            # draw the sensor surface
+            self._draw_sensor_array(sa_collisions)
+            self.screen.blit(self.sa_surf, (0, 0))
+
+            # update the display
+            pygame.display.flip()
+
+        else:
+            logg.critical(f"Unknown render mode {mode}")
 
     def _compute_reward(self):
         """compute the reward for moving on the map
@@ -147,6 +202,56 @@ class RacerEnv(gym.Env):
         # MAYBE a sigmoid-like shape
         return reward, False
 
+    def _collide_sensor_array(self):
+        """get the sa for the current direction and collide it with the road
+        """
+        logg = getMyLogger(f"c.{__class__.__name__}._collide_sensor_array")
+        logg.debug(f"Start _collide_sensor_array")
+
+        # get the current sensor_array to use
+        self.curr_sa = self.racer_car.get_current_sensor_array()
+        logg.debug(f"shape curr_sa {self.curr_sa.shape}")
+
+        sa_collisions = []
+        for s_pos in self.curr_sa:
+            #  logg.debug(f"s_pos {s_pos}")
+            if (
+                s_pos[0] < 0
+                or s_pos[0] >= self.field_wid
+                or s_pos[1] < 0
+                or s_pos[1] >= self.field_hei
+            ):
+                sa_collisions.append(0)
+            else:
+                sa_collisions.append(self.racer_map.raw_map[s_pos[0], s_pos[1]])
+
+        return sa_collisions
+
+    def _draw_sensor_array(self, sa_collisions=None):
+        """draw the sensor_array on a Surface
+        """
+        logg = getMyLogger(f"c.{__class__.__name__}._draw_sensor_array")
+        logg.debug(f"Start _draw_sensor_array")
+
+        black = (0, 0, 0)
+        # reset the Surface
+        # MAYBE it's faster to create a brand new one
+        self.sa_surf.fill(black)
+        # black colors will not be blit
+        self.sa_surf.set_colorkey(black)
+
+        the_color = (0, 255, 0)
+        the_second_color = (0, 0, 255)
+        color = the_color
+        the_size = 3
+        for i, s_pos in enumerate(self.curr_sa):
+            if not sa_collisions is None:
+                if sa_collisions[i] == 1:
+                    color = the_second_color
+                else:
+                    color = the_color
+            pygame.draw.circle(self.sa_surf, color, s_pos, the_size)
+
     def _setup_sidebar(self):
         """
         """
@@ -194,21 +299,3 @@ class RacerEnv(gym.Env):
             logg.critical("You need fonts to put text on the screen")
         # create a new Font object (from a file if you want)
         self.main_font = pygame.font.Font(None, 36)
-
-    def _update_display(self):
-        """draw everything
-        """
-        logg = getMyLogger(f"c.{__class__.__name__}._update_display")
-        logg.debug(f"Start _update_display")
-
-        # Draw Everything again, every frame
-        # the background already has the road and sidebar template drawn
-        self.screen.blit(self.background, (0, 0))
-
-        # draw all moving sprites (the car) on the screen
-        self.allsprites.draw(self.screen)
-        # if you draw on the field you can easily leave a track
-        #  allsprites.draw(field)
-
-        # update the display
-        pygame.display.flip()
