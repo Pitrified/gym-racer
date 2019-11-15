@@ -35,13 +35,14 @@ class RacerEnv(gym.Env):
         self.screen = pygame.display.set_mode(self.total_size)
         pygame.display.set_caption("Racer")
 
+        # create the background that will be redrawn each iteration
+        self.background = pygame.Surface(self.total_size)
+        self.background = self.background.convert()
+
         # Create the playing field
         self.field = pygame.Surface(self.field_size)
         self.field = self.field.convert()
         self.field.fill((0, 0, 0))
-
-        # draw the field on the screen
-        self.screen.blit(self.field, (0, 0))
 
         # where the info will be
         self._setup_sidebar()
@@ -49,13 +50,16 @@ class RacerEnv(gym.Env):
         # setup the agent
         self.racer_car = RacerCar(100, 100)
 
+        # add the car to the list of sprites to render
+        self.allsprites = pygame.sprite.RenderPlain((self.racer_car))
+
         # setup the road
         self.racer_map = RacerMap(self.field_wid, self.field_hei)
         # draw map on the field, it is static, so there is no need to redraw it every time
         self.racer_map.draw(self.field)
 
-        # add the car to the list of sprites to render
-        self.allsprites = pygame.sprite.RenderPlain((self.racer_car))
+        # draw the field (with the map on it) on the background
+        self.background.blit(self.field, (0, 0))
 
         # Define action and observation space TODO
 
@@ -92,9 +96,9 @@ class RacerEnv(gym.Env):
         self._setup_font()
 
         # create the sidebar surface
-        self.sidebar = pygame.Surface(self.sidebar_size)
-        self.sidebar = self.sidebar.convert()
-        self.sidebar.fill((80, 80, 80))
+        self.sidebar_surf = pygame.Surface(self.sidebar_size)
+        self.sidebar_surf = self.sidebar_surf.convert()
+        self.sidebar_surf.fill((80, 80, 80))
 
         # add titles
         speed_text_hei = 200
@@ -102,14 +106,14 @@ class RacerEnv(gym.Env):
         textpos_speed = text_speed.get_rect(
             center=(self.sidebar_wid // 2, speed_text_hei)
         )
-        self.sidebar.blit(text_speed, textpos_speed)
+        self.sidebar_surf.blit(text_speed, textpos_speed)
 
         direction_text_hei = 300
         text_direction = self.main_font.render("Direction:", 1, (255, 255, 255))
         textpos_direction = text_direction.get_rect(
             center=(self.sidebar_wid // 2, direction_text_hei)
         )
-        self.sidebar.blit(text_direction, textpos_direction)
+        self.sidebar_surf.blit(text_direction, textpos_direction)
 
         # setup positions for dynamic info: blit the text on a secondary
         # surface, then blit that on the screen in the specified position
@@ -119,8 +123,8 @@ class RacerEnv(gym.Env):
         self.direction_val_wid = self.sidebar_wid // 2
         self.direction_val_hei = direction_text_hei + val_delta
 
-        # draw the sidebar on the screen
-        self.screen.blit(self.sidebar, (self.field_wid, 0))
+        # draw the sidebar on the background
+        self.background.blit(self.sidebar_surf, (self.field_wid, 0))
 
     def _setup_font(self):
         """
@@ -137,8 +141,8 @@ class RacerEnv(gym.Env):
         logg.debug(f"Start _update_display")
 
         # Draw Everything again, every frame
-        # the field already has the road drawn
-        self.screen.blit(self.field, (0, 0))
+        # the background already has the road and sidebar template drawn
+        self.screen.blit(self.background, (0, 0))
 
         # draw all moving sprites (the car) on the screen
         self.allsprites.draw(self.screen)
