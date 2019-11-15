@@ -1,6 +1,8 @@
 import gym
 import pygame
 
+from random import choice
+
 from pygame.sprite import spritecollide
 
 from gym_racer.envs.utils import getMyLogger
@@ -69,7 +71,7 @@ class RacerEnv(gym.Env):
 
         # Define action and observation space TODO
 
-        # TODO call reset to start env
+        self.reset()
 
     def step(self, action):
         """Perform the action
@@ -116,11 +118,13 @@ class RacerEnv(gym.Env):
         return sa_collisions, reward, done, None
 
     def reset(self):
+        """Reset the state of the environment to an initial state
         """
-        # Reset the state of the environment to an initial state
+        logg = getMyLogger(f"c.{__class__.__name__}.reset")
+        logg.debug(f"Start reset")
 
-        TODO pick a random Segment of the road and put the car there
-        """
+        direction, pos_x, pos_y = choice(self.racer_map.seg_info)
+        self.racer_car.reset(pos_x, pos_y, direction)
 
     def render(self, mode="human", close=False, sa_collisions=None, reward=None):
         """
@@ -205,6 +209,7 @@ class RacerEnv(gym.Env):
 
         reward = 90 - error
         # MAYBE a sigmoid-like shape
+        # TODO proportional to speed
         return reward, False
 
     def _collide_sensor_array(self):

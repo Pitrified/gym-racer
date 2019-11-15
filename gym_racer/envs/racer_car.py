@@ -97,6 +97,18 @@ class RacerCar(Sprite):
         self.rect = self.rot_car_rect[self.direction]
         self.rect.center = self.pos_x, self.pos_y
 
+    def reset(self, pos_x, pos_y, direction=0):
+        """
+        """
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.precise_x = pos_x
+        self.precise_y = pos_y
+
+        self.direction = direction  # in degrees
+
+        self.speed = 0
+
     def _steer(self, action):
         """Steer the car
         """
