@@ -112,7 +112,7 @@ def run_test_env(args):
     going = True
     i = 0
     while going:
-        logg.info(f"----------    New frame    ----------")
+        logg.info(f"----------    ----------    New frame    ----------    ----------")
 
         # Handle Input Events
         # https://stackoverflow.com/a/22099654

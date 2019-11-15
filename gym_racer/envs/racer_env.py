@@ -1,6 +1,8 @@
 import gym
 import pygame
 
+from pygame.sprite import spritecollide
+
 from gym_racer.envs.utils import getMyLogger
 from gym_racer.envs.racer_car import RacerCar
 from gym_racer.envs.racer_map import RacerMap
@@ -73,8 +75,11 @@ class RacerEnv(gym.Env):
         # update the car
         self.racer_car.step(action)
 
-        # TODO only if render is active
-        self._update_display()
+        # compute the reward for this action
+        reward, done = self._compute_reward()
+
+        # draw the new state
+        self.render()
 
     def reset(self):
         """
@@ -85,6 +90,62 @@ class RacerEnv(gym.Env):
         """
         # Render the environment to the screen
         """
+        # TODO only if render is active
+        self._update_display()
+
+    def _compute_reward(self):
+        """compute the reward for moving on the map
+        """
+        logg = getMyLogger(f"c.{__class__.__name__}._compute_reward")
+        logg.debug(f"Start _compute_reward")
+
+        # compute collision car/road
+        hits = spritecollide(self.racer_car, self.racer_map, dokill=False)
+        #  logg.debug(f"hitting {hits}")
+        hit_directions = []
+        hit_sid = []
+        for segment in hits:
+            logg.debug(f"hit segment with id {segment.s_id}")
+            hit_directions.append(self.racer_map.seg_info[segment.s_id][0])
+            hit_sid.append(segment.s_id)
+
+        # out of the map
+        if len(hit_directions) == 0:
+            return 0, True
+
+        # too many hits, your road is weird, cap them at 2 segments
+        elif len(hit_directions) > 2:
+            logg.warn(f"Too many segments hit")
+            hit_directions = hit_directions[:2]
+            hit_sid = hit_sid[:2]
+
+        # now hit_directions is either 1 or 2 elements long
+        if len(hit_directions) == 1:
+            mean_direction = hit_directions[0]
+        else:
+            # 135   90  45    140   95  50    130   85  40
+            # 180       0     185       5     175       -5
+            # 225   270 315   230   275 320   220   265 310
+            # 270, 0 have mean 315 = (270+0+360)/2
+            # 270, 180 have mean 225 = (270+180)/2
+            # 0, 90 have mean 45 = (0+90)/2
+            if abs(hit_directions[0] - hit_directions[1]) > 180:
+                mean_direction = (sum(hit_directions) + 360) / 2
+                if mean_direction >= 360:
+                    mean_direction -= 360
+            else:
+                mean_direction = sum(hit_directions) / 2
+
+        error = self.racer_car.direction - mean_direction
+        if error < 0:
+            error += 360
+        if error > 180:
+            error = 360 - error
+        logg.debug(f"direction {self.racer_car.direction} has error of {error:.4f}")
+
+        reward = 90 - error
+        # MAYBE a sigmoid-like shape
+        return reward, False
 
     def _setup_sidebar(self):
         """

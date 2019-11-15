@@ -12,10 +12,11 @@ from pygame.transform import rotate
 import pygame
 
 from gym_racer.envs.utils import getMyLogger
+from gym_racer.envs.utils import compute_rot_matrix
 
 
 class RacerCar(Sprite):
-    def __init__(self, pos_x, pos_y, direction=0):
+    def __init__(self, pos_x, pos_y, direction=0, sensor_array_type="diamond"):
         logg = logging.getLogger(f"c.{__name__}.__init__")
         logg.info(f"Start init RacerCar")
         super().__init__()
@@ -24,6 +25,8 @@ class RacerCar(Sprite):
         self.pos_y = pos_y
         self.precise_x = pos_x
         self.precise_y = pos_y
+
+        self.sensor_array_type = sensor_array_type
 
         self.direction = direction  # in degrees
         #  self.dir_step = 3
@@ -42,6 +45,9 @@ class RacerCar(Sprite):
         self.image = self.rot_car_image[self.direction]
         self.rect = self.rot_car_rect[self.direction]
         self.rect.center = self.pos_x, self.pos_y
+
+        # setup the sensor_array_template
+        self._create_car_sensors()
 
     def step(self, action):
         """Perform the action
@@ -84,7 +90,7 @@ class RacerCar(Sprite):
         self.precise_y += pos_y_d
         self.pos_x = int(self.precise_x)
         self.pos_y = int(self.precise_y)
-        logg.debug(f"x {self.pos_x} y {self.pos_y} dir {self.direction}")
+        logg.debug(f"Car state: x {self.pos_x} y {self.pos_y} dir {self.direction}")
 
         # pick the rotated image and place it
         self.image = self.rot_car_image[self.direction]
@@ -114,6 +120,61 @@ class RacerCar(Sprite):
             # MAYBE it can go in reverse?
             if self.speed < 0:
                 self.speed = 0
+
+    def _create_car_sensors(self):
+        """create the array of sensors, and rotate it for all possible directions
+        """
+        logg = getMyLogger(f"c.{__class__.__name__}._create_car_sensors")
+        logg.debug(f"Start _create_car_sensors")
+
+        # get the template
+        sensor_array_template = self._create_sensor_array_template()
+
+        # rotate it
+        self.all_sensor_array = {}
+        for dire in range(0, 360, self.dir_step):
+            rot_mat = compute_rot_matrix(360 - dire)
+            rotated_sa = np.matmul(rot_mat, sensor_array_template)
+            int_sa = np.array(rotated_sa, dtype=np.int16)
+            self.all_sensor_array[dire] = int_sa.transpose()
+
+    def get_current_sensor_array(self):
+        """returns the translated sensor array to use
+        """
+        base_sa = self.all_sensor_array[self.direction]
+        car_pos = np.array((self.pos_x, self.pos_y))
+        translated_sa = np.add(base_sa, car_pos)
+        return translated_sa
+
+    def _create_sensor_array_template(self):
+        """create the template for the sensor array
+        """
+        logg = getMyLogger(f"c.{__class__.__name__}._create_sensor_array_template")
+        logg.debug(f"Start _create_sensor_array_template")
+
+        if self.sensor_array_type == "diamond":
+            # create a grid
+            #  self.viewfield_size = 101
+            self.viewfield_size = 301
+            self.viewfield_step = 10
+            #  self.viewfield_step = 25
+            #  self.viewfield_step = 33
+            sat = []
+            for i in range(0, self.viewfield_size, self.viewfield_step):
+                for j in range(0, self.viewfield_size, self.viewfield_step):
+                    sat.append((i, j))
+            sat = np.array(sat).transpose()
+            logg.debug(f"shape sensor_array_template {sat.shape}")
+
+            # rotate the array so that is a diamond
+            rot_mat = compute_rot_matrix(-45)
+            sat = np.matmul(rot_mat, sat)
+            #  logg.debug(f"sat {sat}")
+            logg.debug(f"shape sensor_array_template {sat.shape}")
+        else:
+            logg.critical(f"Unknown sensor_array_type {self.sensor_array_type}")
+
+        return sat
 
     def _create_car_image(self):
         """create the car sprite image and the rect
