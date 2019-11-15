@@ -13,15 +13,15 @@ from gym_racer.envs.racer_map import RacerMap
 class RacerEnv(gym.Env):
     metadata = {"render.modes": ["human"]}
 
-    def __init__(self, field_wid, field_hei):
+    def __init__(self):
         """
         """
         logg = getMyLogger(f"c.{__class__.__name__}.__init__")
         logg.info(f"Start init RacerEnv")
 
         # racing field dimensions
-        self.field_wid = field_wid
-        self.field_hei = field_hei
+        self.field_wid = 900
+        self.field_hei = 900
         self.field_size = (self.field_wid, self.field_hei)
 
         # sidebar info dimensions

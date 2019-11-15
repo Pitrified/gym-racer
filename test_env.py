@@ -100,10 +100,7 @@ def run_test_env(args):
     fps = args.fps
     num_frames = args.num_frames
 
-    field_wid = 900
-    field_hei = 900
-
-    racer_env = gym.make("racer-v0", field_wid=field_wid, field_hei=field_hei,)
+    racer_env = gym.make("racer-v0")
 
     # clock for interactive play
     clock = pygame.time.Clock()
