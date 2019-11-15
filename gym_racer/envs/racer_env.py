@@ -69,6 +69,8 @@ class RacerEnv(gym.Env):
 
         # Define action and observation space TODO
 
+        # TODO call reset to start env
+
     def step(self, action):
         """Perform the action
 
@@ -109,7 +111,7 @@ class RacerEnv(gym.Env):
         sa_collisions = self._collide_sensor_array()
 
         # draw the new state
-        self.render(sa_collisions=sa_collisions)
+        self.render(sa_collisions=sa_collisions, reward=reward)
 
         return sa_collisions, reward, done, None
 
@@ -120,7 +122,7 @@ class RacerEnv(gym.Env):
         TODO pick a random Segment of the road and put the car there
         """
 
-    def render(self, mode="human", close=False, sa_collisions=None):
+    def render(self, mode="human", close=False, sa_collisions=None, reward=None):
         """
         # Render the environment to the screen
         """
@@ -141,6 +143,9 @@ class RacerEnv(gym.Env):
             # draw the sensor surface
             self._draw_sensor_array(sa_collisions)
             self.screen.blit(self.sa_surf, (0, 0))
+
+            # update the dynamic sidebar
+            self._update_dynamic_sidebar(reward)
 
             # update the display
             pygame.display.flip()
@@ -261,41 +266,113 @@ class RacerEnv(gym.Env):
         # setup fonts to display info
         self._setup_font()
 
+        self.sidebar_back_color = (80, 80, 80)
+        self.font_info_color = (255, 255, 255)
+
+        self.side_space = 50
+
         # create the sidebar surface
         self.sidebar_surf = pygame.Surface(self.sidebar_size)
         self.sidebar_surf = self.sidebar_surf.convert()
-        self.sidebar_surf.fill((80, 80, 80))
+        self.sidebar_surf.fill(self.sidebar_back_color)
 
         # add titles
-        speed_text_hei = 200
-        text_speed = self.main_font.render("Speed:", 1, (255, 255, 255))
+        self.speed_text_hei = 200
+        text_speed = self.main_font.render("Speed:", 1, self.font_info_color)
         textpos_speed = text_speed.get_rect(
-            center=(self.sidebar_wid // 2, speed_text_hei)
+            midleft=(self.side_space, self.speed_text_hei)
         )
         self.sidebar_surf.blit(text_speed, textpos_speed)
 
-        direction_text_hei = 300
-        text_direction = self.main_font.render("Direction:", 1, (255, 255, 255))
+        self.direction_text_hei = 300
+        text_direction = self.main_font.render("Direction:", 1, self.font_info_color)
         textpos_direction = text_direction.get_rect(
-            center=(self.sidebar_wid // 2, direction_text_hei)
+            midleft=(self.side_space, self.direction_text_hei)
         )
         self.sidebar_surf.blit(text_direction, textpos_direction)
 
+        self.reward_text_hei = 400
+        text_reward = self.main_font.render("Reward:", 1, self.font_info_color)
+        textpos_reward = text_reward.get_rect(
+            midleft=(self.side_space, self.reward_text_hei)
+        )
+        self.sidebar_surf.blit(text_reward, textpos_reward)
+
         # setup positions for dynamic info: blit the text on a secondary
         # surface, then blit that on the screen in the specified position
-        val_delta = 50
-        self.speed_val_wid = self.sidebar_wid // 2
-        self.speed_val_hei = speed_text_hei + val_delta
-        self.direction_val_wid = self.sidebar_wid // 2
-        self.direction_val_hei = direction_text_hei + val_delta
+        self.speed_val_pos = self.sidebar_wid - self.side_space, self.speed_text_hei
+        self.direction_val_pos = (
+            self.sidebar_wid - self.side_space,
+            self.direction_text_hei,
+        )
+        self.reward_val_pos = self.sidebar_wid - self.side_space, self.reward_text_hei
+
+        # create the dynamic sidebar surface
+        self.side_dyn_surf = pygame.Surface(self.sidebar_size)
+        self.side_dyn_surf = self.side_dyn_surf.convert()
+        black = (0, 0, 0)
+        self.side_dyn_surf.fill(black)
+        self.side_dyn_surf.set_colorkey(black)
 
         # draw the sidebar on the background
         self.background.blit(self.sidebar_surf, (self.field_wid, 0))
 
+    def _update_dynamic_sidebar(self, reward=None):
+        """fill the info values in the sidebar
+        """
+        logg = getMyLogger(f"c.{__class__.__name__}._update_dynamic_sidebar")
+        logg.info(f"Start _update_dynamic_sidebar with reward {reward}")
+
+        # reset the Surface
+        black = (0, 0, 0)
+        self.side_dyn_surf.fill(black)
+
+        # speed text
+        text_info_speed = self.main_font.render(
+            f"{self.racer_car.speed}", 1, self.font_info_color, self.sidebar_back_color,
+        )
+        textpos_speed_info = text_info_speed.get_rect(midright=self.speed_val_pos)
+        self.side_dyn_surf.blit(text_info_speed, textpos_speed_info)
+
+        # direction text
+        text_info_direction = self.main_font.render(
+            f"{self.racer_car.direction}",
+            1,
+            self.font_info_color,
+            self.sidebar_back_color,
+        )
+        textpos_direction_info = text_info_direction.get_rect(
+            midright=self.direction_val_pos
+        )
+        self.side_dyn_surf.blit(text_info_direction, textpos_direction_info)
+
+        # reward text
+        if not reward is None:
+            reward_val = f"{reward}"
+        else:
+            reward_val = f"0"
+        text_info_reward = self.main_font.render(
+            reward_val, 1, self.font_info_color, self.sidebar_back_color,
+        )
+        textpos_reward_info = text_info_reward.get_rect(midright=self.reward_val_pos)
+        self.side_dyn_surf.blit(text_info_reward, textpos_reward_info)
+
+        # draw the filled surface
+        self.screen.blit(self.side_dyn_surf, (self.field_wid, 0))
+
     def _setup_font(self):
         """
         """
+        logg = getMyLogger(f"c.{__class__.__name__}._setup_font")
+        logg.info(f"Start _setup_font")
+
+        #  logg.debug(f"all fonts {pygame.font.get_fonts()}")
+        #  logg.debug(f"default font {pygame.font.get_default_font()}")
+        #  logg.debug(f"match font hack {pygame.font.match_font('hack')}")
+
         if not pygame.font:
             logg.critical("You need fonts to put text on the screen")
         # create a new Font object (from a file if you want)
-        self.main_font = pygame.font.Font(None, 36)
+        #  self.main_font = pygame.font.Font(None, 36)
+        #  self.main_font = pygame.font.Font(pygame.font.match_font("hack"), 16)
+        self.main_font = pygame.font.SysFont("arial", 26)
