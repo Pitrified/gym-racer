@@ -2,11 +2,14 @@ import logging
 import numpy as np
 
 from math import ceil
+from math import cos
+from math import radians
+from math import sin
 
-import pygame
+from pygame import Surface
 from pygame.sprite import Sprite
 from pygame.transform import rotate
-from pygame import Surface
+import pygame
 
 from gym_racer.envs.utils import getMyLogger
 
@@ -43,11 +46,74 @@ class RacerCar(Sprite):
     def step(self, action):
         """Perform the action
         """
+        logg = logging.getLogger(f"c.{__name__}.step")
+        logg.debug(f"Doing action {action}")
+
+        if action == "up":
+            self._accelerate("up")
+        elif action == "down":
+            self._accelerate("down")
+
+        elif action == "right":
+            self._steer("right")
+        elif action == "left":
+            self._steer("left")
+
+        elif action == "upright":
+            self._accelerate("up")
+            self._steer("right")
+        elif action == "upleft":
+            self._accelerate("up")
+            self._steer("left")
+        elif action == "downright":
+            self._accelerate("down")
+            self._steer("right")
+        elif action == "downleft":
+            self._accelerate("down")
+            self._steer("left")
+
+        elif action == "nop":
+            pass
+
+        # compute delta
+        pos_x_d = cos(radians(360 - self.direction)) * self.speed
+        pos_y_d = sin(radians(360 - self.direction)) * self.speed
+
+        # move the car
+        self.precise_x += pos_x_d
+        self.precise_y += pos_y_d
+        self.pos_x = int(self.precise_x)
+        self.pos_y = int(self.precise_y)
+        logg.debug(f"x {self.pos_x} y {self.pos_y} dir {self.direction}")
 
         # pick the rotated image and place it
         self.image = self.rot_car_image[self.direction]
         self.rect = self.rot_car_rect[self.direction]
         self.rect.center = self.pos_x, self.pos_y
+
+    def _steer(self, action):
+        """Steer the car
+        """
+        if action == "left":
+            self.direction += self.dir_step
+            if self.direction >= 360:
+                self.direction -= 360
+        elif action == "right":
+            self.direction -= self.dir_step
+            if self.direction < 0:
+                self.direction += 360
+
+    def _accelerate(self, action):
+        """Control the speed of the car
+        """
+        if action == "up":
+            # TODO some threshold, possibly from the drag
+            self.speed += self.speed_step
+        elif action == "down":
+            self.speed -= self.speed_step
+            # MAYBE it can go in reverse?
+            if self.speed < 0:
+                self.speed = 0
 
     def _create_car_image(self):
         """create the car sprite image and the rect

@@ -66,6 +66,9 @@ class RacerEnv(gym.Env):
         logg = getMyLogger(f"c.{__class__.__name__}.step")
         logg.info(f"Start env step, action: '{action}'")
 
+        # update the car
+        self.racer_car.step(action)
+
         # TODO only if render is active
         self._update_display()
 

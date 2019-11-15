@@ -20,6 +20,13 @@ def parse_arguments():
     parser.add_argument(
         "-s", "--rand_seed", type=int, default=-1, help="random seed to use"
     )
+    parser.add_argument(
+        "-nf",
+        "--num_frames",
+        type=int,
+        default=-1,
+        help="how many frames to run, -1 is unlimited",
+    )
 
     # last line to parse the args
     args = parser.parse_args()
@@ -91,15 +98,12 @@ def run_test_env(args):
     logg.info(f"Start run_test_env")
 
     fps = args.fps
+    num_frames = args.num_frames
 
     field_wid = 900
     field_hei = 900
 
-    racer_env = gym.make(
-        "racer-v0",
-        field_wid=field_wid,
-        field_hei=field_hei,
-    )
+    racer_env = gym.make("racer-v0", field_wid=field_wid, field_hei=field_hei,)
 
     # clock for interactive play
     clock = pygame.time.Clock()
@@ -143,9 +147,10 @@ def run_test_env(args):
 
         clock.tick(fps)
 
-        i += 1
-        if i == 3:
-            going = False
+        if num_frames > 0:
+            i += 1
+            if i == num_frames:
+                going = False
 
 
 if __name__ == "__main__":
