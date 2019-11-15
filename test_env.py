@@ -1,12 +1,14 @@
 import argparse
 import logging
 import numpy as np
-
-import gym
-import gym_racer
+import pygame
 
 from random import seed
 from timeit import default_timer as timer
+
+import gym
+import gym_racer
+from gym_racer.envs.utils import getMyLogger
 
 
 def parse_arguments():
@@ -14,6 +16,7 @@ def parse_arguments():
     """
     parser = argparse.ArgumentParser(description="Test the racer env")
 
+    parser.add_argument("-fps", "--fps", type=int, default=1, help="frame per second")
     parser.add_argument(
         "-s", "--rand_seed", type=int, default=-1, help="random seed to use"
     )
@@ -35,8 +38,8 @@ def setup_logger(logLevel="DEBUG"):
     #  log_format_module = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     #  log_format_module = "%(name)s - %(levelname)s: %(message)s"
     #  log_format_module = '%(levelname)s: %(message)s'
-    #  log_format_module = '%(name)s: %(message)s'
-    log_format_module = "%(message)s"
+    log_format_module = "%(name)s: %(message)s"
+    #  log_format_module = "%(message)s"
 
     formatter = logging.Formatter(log_format_module)
     module_console_handler.setFormatter(formatter)
@@ -84,7 +87,65 @@ def setup_env():
 def run_test_env(args):
     """
     """
-    env = gym.make("racer-v0")
+    logg = getMyLogger(f"c.{__name__}.run_test_env", "INFO")
+    logg.info(f"Start run_test_env")
+
+    fps = args.fps
+
+    field_wid = 900
+    field_hei = 900
+
+    racer_env = gym.make(
+        "racer-v0",
+        field_wid=field_wid,
+        field_hei=field_hei,
+    )
+
+    # clock for interactive play
+    clock = pygame.time.Clock()
+
+    # Main Loop
+    going = True
+    i = 0
+    while going:
+        logg.info(f"----------    New frame    ----------")
+
+        # Handle Input Events
+        # https://stackoverflow.com/a/22099654
+        for event in pygame.event.get():
+            logg.debug(f"Handling event {event}")
+            if event.type == pygame.QUIT:
+                going = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    going = False
+            logg.debug(f"Done handling")
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_d]:
+            racer_env.step("right")
+        elif keys[pygame.K_a]:
+            racer_env.step("left")
+        elif keys[pygame.K_w]:
+            racer_env.step("up")
+        elif keys[pygame.K_x]:
+            racer_env.step("down")
+        elif keys[pygame.K_q]:
+            racer_env.step("upleft")
+        elif keys[pygame.K_e]:
+            racer_env.step("upright")
+        elif keys[pygame.K_z]:
+            racer_env.step("downleft")
+        elif keys[pygame.K_c]:
+            racer_env.step("downright")
+        else:
+            racer_env.step("nop")
+
+        clock.tick(fps)
+
+        i += 1
+        if i == 3:
+            going = False
 
 
 if __name__ == "__main__":
