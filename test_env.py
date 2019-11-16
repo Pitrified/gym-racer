@@ -82,7 +82,8 @@ def setup_env():
     np.random.seed(myseed)
 
     # build command string to repeat this run
-    recap = f"python3 lab03_main.py"
+    # NOTE this does not work for flags, but whatever
+    recap = f"python3 test_env.py"
     for a, v in args._get_kwargs():
         if a == "rand_seed":
             recap += f" --rand_seed {myseed}"
@@ -152,6 +153,7 @@ def test_interactive_env(args):
         # draw the new state
         racer_env.render(reward=reward)
 
+        # wait a bit to limit fps
         clock.tick(fps)
 
         if num_frames > 0:
@@ -182,12 +184,15 @@ def test_automatic_env(args):
 
         action = racer_env.action_space.sample()
         logg.debug(f"Do the action {action}")
+        mid_frame = timer()
 
         obs, reward, done, info = racer_env.step(action)
-        #  racer_env.render(reward=reward)
+        racer_env.render(reward=reward)
 
         end_frame = timer()
-        logg.debug(f"Time for frame {end_frame-start_frame:.6f} s")
+        logg.debug(f"Time for sample {mid_frame-start_frame:.6f} s")
+        logg.debug(f"Time for step   {end_frame-mid_frame:.6f} s")
+        logg.debug(f"Time for frame  {end_frame-start_frame:.6f} s")
 
         logg.debug(
             f"Car state: x {info['car_pos_x']} y {info['car_pos_y']} dir {info['car_dir']}"

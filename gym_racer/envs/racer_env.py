@@ -1,5 +1,6 @@
 import numpy as np
 from random import choice
+from timeit import default_timer as timer
 
 import gym
 from gym import spaces
@@ -14,8 +15,9 @@ from gym_racer.envs.utils import getMyLogger
 
 class RacerEnv(gym.Env):
     metadata = {"render.modes": ["human"]}
+    # TODO how to advertise sensor_array_type properly?
 
-    def __init__(self, sensor_array_type="diamond"):
+    def __init__(self, sensor_array_type="lidar"):
         """
         """
         logg = getMyLogger(f"c.{__class__.__name__}.__init__")
@@ -72,6 +74,9 @@ class RacerEnv(gym.Env):
         # create the surface for the sensor_array
         self.sa_surf = pygame.Surface(self.field_size)
         self.sa_surf = self.sa_surf.convert()
+        # black colors will not be blit
+        black = (0, 0, 0)
+        self.sa_surf.set_colorkey(black)
 
         # Define action and observation space
         self._setup_action_obs_space()
@@ -105,8 +110,9 @@ class RacerEnv(gym.Env):
             info (dict) :
                 diagnostic information useful for debugging.
         """
-        logg = getMyLogger(f"c.{__class__.__name__}.step")
-        logg.info(f"Start env step, action: '{action}'")
+
+        #  logg = getMyLogger(f"c.{__class__.__name__}.step")
+        #  logg.info(f"Start env step, action: '{action}'")
 
         # update the car
         self.racer_car.step(action)
@@ -139,13 +145,11 @@ class RacerEnv(gym.Env):
         self.racer_car.reset(pos_x, pos_y, direction)
 
     def render(self, mode="human", close=False, reward=None):
-        """
-        # Render the environment to the screen
+        """Render the environment to the screen
         """
         logg = getMyLogger(f"c.{__class__.__name__}.render")
         logg.debug(f"Start render")
 
-        # TODO only if render is active
         if mode == "human":
             # Draw Everything again, every frame
             # the background already has the road and sidebar template drawn
@@ -166,6 +170,8 @@ class RacerEnv(gym.Env):
             # update the display
             pygame.display.flip()
 
+        # MAYBE add console render
+
         else:
             raise ValueError(f"Unknown render mode {mode}")
 
@@ -181,6 +187,14 @@ class RacerEnv(gym.Env):
             self.observation_space = spaces.Box(
                 low=0, high=1, shape=(HEIGHT, WIDTH, N_CHANNELS), dtype=np.uint8
             )
+
+        elif self.sensor_array_type == "lidar":
+            HEIGHT = self.racer_car.tot_ray_num
+            N_CHANNELS = 1
+            self.observation_space = spaces.Box(
+                low=0, high=1, shape=(HEIGHT, N_CHANNELS), dtype=np.uint8
+            )
+
         else:
             raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
 
@@ -191,7 +205,11 @@ class RacerEnv(gym.Env):
         logg.debug(f"Start _compute_reward")
 
         # compute collision car/road
+        start = timer()
         hits = spritecollide(self.racer_car, self.racer_map, dokill=False)
+        end = timer()
+        logg.debug(f"Time for sprite collisions {end-start:.6f} s")
+
         #  logg.debug(f"hitting {hits}")
         hit_directions = []
         hit_sid = []
@@ -260,7 +278,7 @@ class RacerEnv(gym.Env):
                 if (0 <= s_pos[0] < self.field_wid) and (
                     0 <= s_pos[1] < self.field_hei
                 ):
-                    # extract the value of the map (road - noroad) at that pos
+                    # extract the value of the map (road[1] - noroad[0]) at that pos
                     self.sa_collisions[i, j] = self.racer_map.raw_map[
                         s_pos[0], s_pos[1]
                     ]
@@ -268,7 +286,30 @@ class RacerEnv(gym.Env):
     def _analyze_collisions(self):
         """parse the collision matrix into obs
         """
-        obs = None
+        logg = getMyLogger(f"c.{__class__.__name__}._analyze_collisions")
+        logg.debug(f"Start _analyze_collisions")
+
+        if self.sensor_array_type == "diamond":
+            # return the entire matrix
+            obs = self.sa_collisions
+
+        elif self.sensor_array_type == "lidar":
+            #  logg.debug(f"shape sa_collisions {self.sa_collisions.shape}")
+            #  logg.debug(f"sa_collisions\n{self.sa_collisions}")
+
+            self.zero_strip = np.zeros((self.sa_collisions.shape[0], 1), dtype=np.uint8)
+            #  logg.debug(f"shape zero_strip {self.zero_strip.shape}")
+            pad_collisions = np.hstack((self.sa_collisions, self.zero_strip))
+            #  logg.debug(f"shape pad_collisions {pad_collisions.shape}")
+            #  logg.debug(f"pad_collisions\n{pad_collisions}")
+
+            obs = np.argmin(pad_collisions, axis=1)
+            #  logg.debug(f"shape obs {obs.shape}")
+            #  logg.debug(f"obs: {obs}")
+
+        else:
+            raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
+
         return obs
 
     def _draw_sensor_array(self):
@@ -279,16 +320,12 @@ class RacerEnv(gym.Env):
 
         black = (0, 0, 0)
         # reset the Surface
-        # MAYBE it's faster to create a brand new one
         self.sa_surf.fill(black)
-        # black colors will not be blit
-        self.sa_surf.set_colorkey(black)
 
         the_color = (0, 255, 0)
         the_second_color = (0, 0, 255)
         color = the_color
-        #  the_size = 3
-        the_size = 1
+        the_size = 2
         for i, row in enumerate(self.curr_sa):
             for j, s_pos in enumerate(row):
                 if not self.sa_collisions is None:
@@ -325,14 +362,14 @@ class RacerEnv(gym.Env):
         )
         self.sidebar_surf.blit(text_speed, textpos_speed)
 
-        self.direction_text_hei = 300
+        self.direction_text_hei = 260
         text_direction = self.main_font.render("Direction:", 1, self.font_info_color)
         textpos_direction = text_direction.get_rect(
             midleft=(self.side_space, self.direction_text_hei)
         )
         self.sidebar_surf.blit(text_direction, textpos_direction)
 
-        self.reward_text_hei = 400
+        self.reward_text_hei = 320
         text_reward = self.main_font.render("Reward:", 1, self.font_info_color)
         textpos_reward = text_reward.get_rect(
             midleft=(self.side_space, self.reward_text_hei)
@@ -355,7 +392,7 @@ class RacerEnv(gym.Env):
         self.side_dyn_surf.fill(black)
         self.side_dyn_surf.set_colorkey(black)
 
-        # draw the sidebar on the background
+        # draw the static sidebar on the background
         self.background.blit(self.sidebar_surf, (self.field_wid, 0))
 
     def _update_dynamic_sidebar(self, reward=None):

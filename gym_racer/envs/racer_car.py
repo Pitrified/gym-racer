@@ -85,7 +85,7 @@ class RacerCar(Sprite):
         self.rect.center = self.pos_x, self.pos_y
 
     def reset(self, pos_x, pos_y, direction=0):
-        """
+        """Reset the car state
         """
         self.pos_x = pos_x
         self.pos_y = pos_y
@@ -143,6 +143,12 @@ class RacerCar(Sprite):
                 self.all_sensor_array[dire] = self.all_sensor_array[dire].reshape(
                     self.viewfield_size, self.viewfield_size, 2
                 )
+
+            elif self.sensor_array_type == "lidar":
+                self.all_sensor_array[dire] = self.all_sensor_array[dire].reshape(
+                    self.tot_ray_num, self.ray_sensors_per_ray, 2
+                )
+
             else:
                 raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
 
@@ -159,34 +165,54 @@ class RacerCar(Sprite):
 
         in a convenient shape to rotate it:
         diamond:
-            * has shape (2, n*n)
+            * has shape (2, viewfield_size^2)
         lidar:
-            * has shape TODO
+            * has shape (2,  (ray_num*2+1) * ray_sensors_per_ray)
         """
         logg = getMyLogger(f"c.{__class__.__name__}._create_sensor_array_template")
         logg.debug(f"Start _create_sensor_array_template")
 
         if self.sensor_array_type == "diamond":
             # create a grid, rotated by 45 degrees
-            #  self.viewfield_size = 20  # number of rows/columns in the sensor
+            self.viewfield_size = 20  # number of rows/columns in the sensor
             #  self.viewfield_size = 4  # number of rows/columns in the sensor
-            self.viewfield_size = 60  # number of rows/columns in the sensor
-            #  self.viewfield_step = 10  # spacing between the dots
-            self.viewfield_step = 5  # spacing between the dots
+            #  self.viewfield_size = 60  # number of rows/columns in the sensor
+            self.viewfield_step = 10  # spacing between the dots
+            #  self.viewfield_step = 5  # spacing between the dots
 
             sat = []
             for i in range(0, self.viewfield_size):
                 for j in range(0, self.viewfield_size):
                     sat.append((i, j))
             sat = np.array(sat).transpose() * self.viewfield_step
-            #  logg.debug(f"sat {sat}")
-            #  logg.debug(f"shape sensor_array_template {sat.shape}")
 
             # rotate the array so that is a diamond
             rot_mat = compute_rot_matrix(-45)
             sat = np.matmul(rot_mat, sat)
-            #  logg.debug(f"sat {sat}")
             logg.debug(f"shape sensor_array_template {sat.shape}")
+
+        elif self.sensor_array_type == "lidar":
+            self.ray_num = 7  # number of rays per side
+            self.tot_ray_num = self.ray_num * 2 + 1
+            self.ray_step = 15  # distance between sensors along a ray
+            self.ray_sensors_per_ray = 20  # number of sensors along a ray
+            self.ray_max_angle = 70  # angle to sweep left/right
+            self.ray_angle = self.ray_max_angle / self.ray_num
+
+            # create the horizontal ray
+            base_ray = tuple((s, 0) for s in range(1, self.ray_sensors_per_ray + 1))
+            base_ray = np.array(base_ray).transpose() * self.ray_step
+
+            sat = []
+            for r in range(-self.ray_num, self.ray_num + 1):
+                rot_mat = compute_rot_matrix(r * self.ray_angle)
+                rot_ray = np.matmul(rot_mat, base_ray)
+                sat.append(rot_ray)
+
+            tot_sensors = self.tot_ray_num * self.ray_sensors_per_ray
+            sat = np.array(sat).transpose((1, 0, 2)).reshape(2, tot_sensors)
+            logg.debug(f"shape sensor_array_template {sat.shape}")
+
         else:
             raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
 

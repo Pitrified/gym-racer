@@ -14,7 +14,8 @@ from gym_racer.envs.utils import getMyLogger
 class RacerMap(Group):
     """Map for a racer, as collection of Segment
 
-    Should be easy to do collision detection
+    Easy to do collision detection with pygame
+    A numpy array as big as the field is available to check if a pos is road or not
     """
 
     def __init__(self, field_wid, field_hei):
@@ -41,6 +42,7 @@ class RacerMap(Group):
         self.segments = {}
         self.num_segments = len(self.seg_info)
 
+        # randomly flip the road, so there is no ring bias
         flip_segments = randint(0, 1)
 
         if flip_segments:
@@ -94,9 +96,8 @@ class RacerMap(Group):
 
     def _precompute_map(self):
         """turn the map into a np array for fast sensor collision lookup
-
-        MAYBE add a map with s_id in it and do the car/road collision with that
         """
+        #  MAYBE add a map with s_id in it and do the car/road collision with that
         logg = getMyLogger(f"c.{__name__}._precompute_map", "INFO")
         logg.debug(f"Start _precompute_map")
 
