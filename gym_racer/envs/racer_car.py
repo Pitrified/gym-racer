@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 from math import ceil
 from math import cos
@@ -10,14 +9,14 @@ from pygame import Surface
 from pygame.sprite import Sprite
 from pygame.transform import rotate
 
-from gym_racer.envs.utils import getMyLogger
+#  from gym_racer.envs.utils import getMyLogger
 from gym_racer.envs.utils import compute_rot_matrix
 
 
 class RacerCar(Sprite):
     def __init__(self, pos_x=0, pos_y=0, direction=0, sensor_array_type="diamond"):
-        logg = logging.getLogger(f"c.{__name__}.__init__")
-        logg.info(f"Start init RacerCar")
+        #  logg = logging.getLogger(f"c.{__name__}.__init__")
+        #  logg.info(f"Start init RacerCar")
         super().__init__()
 
         self.pos_x = pos_x
@@ -55,8 +54,8 @@ class RacerCar(Sprite):
             1) accelerate:  NOOP[0], UP[1], DOWN[2]
             2) steer:  NOOP[0], LEFT[1], RIGHT[2]
         """
-        logg = logging.getLogger(f"c.{__name__}.step")
-        logg.debug(f"Doing action {action}")
+        #  logg = logging.getLogger(f"c.{__name__}.step")
+        #  logg.debug(f"Doing action {action}")
 
         if action[0] == 1:
             self._accelerate("up")
@@ -77,7 +76,7 @@ class RacerCar(Sprite):
         self.precise_y += pos_y_d
         self.pos_x = int(self.precise_x)
         self.pos_y = int(self.precise_y)
-        logg.debug(f"Car state: x {self.pos_x} y {self.pos_y} dir {self.direction}")
+        #  logg.debug(f"Car state: x {self.pos_x} y {self.pos_y} dir {self.direction}")
 
         # pick the rotated image and place it
         self.image = self.rot_car_image[self.direction]
@@ -123,8 +122,8 @@ class RacerCar(Sprite):
     def _create_car_sensors(self):
         """create the array of sensors, and rotate it for all possible directions
         """
-        logg = getMyLogger(f"c.{__class__.__name__}._create_car_sensors")
-        logg.debug(f"Start _create_car_sensors")
+        #  logg = getMyLogger(f"c.{__class__.__name__}._create_car_sensors")
+        #  logg.debug(f"Start _create_car_sensors")
 
         # get the template
         sensor_array_template = self._create_sensor_array_template()
@@ -169,8 +168,8 @@ class RacerCar(Sprite):
         lidar:
             * has shape (2,  (ray_num*2+1) * ray_sensors_per_ray)
         """
-        logg = getMyLogger(f"c.{__class__.__name__}._create_sensor_array_template")
-        logg.debug(f"Start _create_sensor_array_template")
+        #  logg = getMyLogger(f"c.{__class__.__name__}._create_sensor_array_template")
+        #  logg.debug(f"Start _create_sensor_array_template")
 
         if self.sensor_array_type == "diamond":
             # create a grid, rotated by 45 degrees
@@ -189,7 +188,7 @@ class RacerCar(Sprite):
             # rotate the array so that is a diamond
             rot_mat = compute_rot_matrix(-45)
             sat = np.matmul(rot_mat, sat)
-            logg.debug(f"shape sensor_array_template {sat.shape}")
+            #  logg.debug(f"shape sensor_array_template {sat.shape}")
 
         elif self.sensor_array_type == "lidar":
             self.ray_num = 7  # number of rays per side
@@ -211,7 +210,7 @@ class RacerCar(Sprite):
 
             tot_sensors = self.tot_ray_num * self.ray_sensors_per_ray
             sat = np.array(sat).transpose((1, 0, 2)).reshape(2, tot_sensors)
-            logg.debug(f"shape sensor_array_template {sat.shape}")
+            #  logg.debug(f"shape sensor_array_template {sat.shape}")
 
         else:
             raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
@@ -223,8 +222,8 @@ class RacerCar(Sprite):
 
         image.set_colorkey(colorkey, RLEACCEL)
         """
-        logg = logging.getLogger(f"c.{__name__}._create_car_image")
-        logg.info(f"Start _create_car_image")
+        #  logg = logging.getLogger(f"c.{__name__}._create_car_image")
+        #  logg.info(f"Start _create_car_image")
 
         # wheel dimensions
         w_color = (80, 80, 80)
@@ -326,10 +325,10 @@ class RacerCar(Sprite):
     def _rotate_car_image(self):
         """Create rotated copies of the surface
         """
-        logg = logging.getLogger(f"c.{__name__}._rotate_car_image")
-        logg.info(f"Start _rotate_car_image")
-        if 360 % self.dir_step != 0:
-            logg.warn(f"A dir_step that is not divisor of 360 is a bad idea")
+        #  logg = logging.getLogger(f"c.{__name__}._rotate_car_image")
+        #  logg.info(f"Start _rotate_car_image")
+        #  if 360 % self.dir_step != 0:
+            #  logg.warn(f"A dir_step that is not divisor of 360 is a bad idea")
 
         self.rot_car_image = {}
         self.rot_car_rect = {}

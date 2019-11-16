@@ -1,6 +1,6 @@
 import numpy as np
 from random import choice
-from timeit import default_timer as timer
+#  from timeit import default_timer as timer
 
 import gym
 from gym import spaces
@@ -10,7 +10,7 @@ from pygame.sprite import spritecollide
 
 from gym_racer.envs.racer_car import RacerCar
 from gym_racer.envs.racer_map import RacerMap
-from gym_racer.envs.utils import getMyLogger
+#  from gym_racer.envs.utils import getMyLogger
 
 
 class RacerEnv(gym.Env):
@@ -20,8 +20,8 @@ class RacerEnv(gym.Env):
     def __init__(self, sensor_array_type="lidar"):
         """
         """
-        logg = getMyLogger(f"c.{__class__.__name__}.__init__")
-        logg.info(f"Start init RacerEnv")
+        #  logg = getMyLogger(f"c.{__class__.__name__}.__init__")
+        #  logg.info(f"Start init RacerEnv")
 
         self.sensor_array_type = sensor_array_type
 
@@ -131,6 +131,7 @@ class RacerEnv(gym.Env):
             "car_pos_x": self.racer_car.pos_x,
             "car_pos_y": self.racer_car.pos_y,
             "car_dir": self.racer_car.direction,
+            "car_speed": self.racer_car.speed,
         }
 
         return obs, reward, done, info
@@ -138,8 +139,8 @@ class RacerEnv(gym.Env):
     def reset(self):
         """Reset the state of the environment to an initial state
         """
-        logg = getMyLogger(f"c.{__class__.__name__}.reset")
-        logg.debug(f"Start reset")
+        #  logg = getMyLogger(f"c.{__class__.__name__}.reset")
+        #  logg.debug(f"Start reset")
 
         direction, pos_x, pos_y = choice(self.racer_map.seg_info)
         self.racer_car.reset(pos_x, pos_y, direction)
@@ -147,8 +148,8 @@ class RacerEnv(gym.Env):
     def render(self, mode="human", close=False, reward=None):
         """Render the environment to the screen
         """
-        logg = getMyLogger(f"c.{__class__.__name__}.render")
-        logg.debug(f"Start render")
+        #  logg = getMyLogger(f"c.{__class__.__name__}.render")
+        #  logg.debug(f"Start render")
 
         if mode == "human":
             # Draw Everything again, every frame
@@ -201,20 +202,20 @@ class RacerEnv(gym.Env):
     def _compute_reward(self):
         """compute the reward for moving on the map
         """
-        logg = getMyLogger(f"c.{__class__.__name__}._compute_reward")
-        logg.debug(f"Start _compute_reward")
+        #  logg = getMyLogger(f"c.{__class__.__name__}._compute_reward")
+        #  logg.debug(f"Start _compute_reward")
 
         # compute collision car/road
-        start = timer()
+        #  start = timer()
         hits = spritecollide(self.racer_car, self.racer_map, dokill=False)
-        end = timer()
-        logg.debug(f"Time for sprite collisions {end-start:.6f} s")
+        #  end = timer()
+        #  logg.debug(f"Time for sprite collisions {end-start:.6f} s")
 
         #  logg.debug(f"hitting {hits}")
         hit_directions = []
         hit_sid = []
         for segment in hits:
-            logg.debug(f"hit segment with id {segment.s_id}")
+            #  logg.debug(f"hit segment with id {segment.s_id}")
             hit_directions.append(self.racer_map.seg_info[segment.s_id][0])
             hit_sid.append(segment.s_id)
 
@@ -224,7 +225,7 @@ class RacerEnv(gym.Env):
 
         # too many hits, your road is weird, cap them at 2 segments
         elif len(hit_directions) > 2:
-            logg.warn(f"Too many segments hit")
+            #  logg.warn(f"Too many segments hit")
             hit_directions = hit_directions[:2]
             hit_sid = hit_sid[:2]
 
@@ -250,7 +251,7 @@ class RacerEnv(gym.Env):
             error += 360
         if error > 180:
             error = 360 - error
-        logg.debug(f"direction {self.racer_car.direction} has error of {error:.4f}")
+        #  logg.debug(f"direction {self.racer_car.direction} has error of {error:.4f}")
 
         reward = 90 - error
         # MAYBE a sigmoid-like shape
@@ -260,12 +261,12 @@ class RacerEnv(gym.Env):
     def _collide_sensor_array(self):
         """get the sa for the current direction and collide it with the road
         """
-        logg = getMyLogger(f"c.{__class__.__name__}._collide_sensor_array")
-        logg.debug(f"Start _collide_sensor_array")
+        #  logg = getMyLogger(f"c.{__class__.__name__}._collide_sensor_array")
+        #  logg.debug(f"Start _collide_sensor_array")
 
         # get the current sensor_array to use
         self.curr_sa = self.racer_car.get_current_sensor_array()
-        logg.debug(f"shape curr_sa {self.curr_sa.shape}")
+        #  logg.debug(f"shape curr_sa {self.curr_sa.shape}")
 
         # copy the shape of curr_sa, but with one channel
         m = self.curr_sa.shape[0]
@@ -286,8 +287,8 @@ class RacerEnv(gym.Env):
     def _analyze_collisions(self):
         """parse the collision matrix into obs
         """
-        logg = getMyLogger(f"c.{__class__.__name__}._analyze_collisions")
-        logg.debug(f"Start _analyze_collisions")
+        #  logg = getMyLogger(f"c.{__class__.__name__}._analyze_collisions")
+        #  logg.debug(f"Start _analyze_collisions")
 
         if self.sensor_array_type == "diamond":
             # return the entire matrix
@@ -315,8 +316,8 @@ class RacerEnv(gym.Env):
     def _draw_sensor_array(self):
         """draw the sensor_array on a Surface
         """
-        logg = getMyLogger(f"c.{__class__.__name__}._draw_sensor_array")
-        logg.debug(f"Start _draw_sensor_array")
+        #  logg = getMyLogger(f"c.{__class__.__name__}._draw_sensor_array")
+        #  logg.debug(f"Start _draw_sensor_array")
 
         black = (0, 0, 0)
         # reset the Surface
@@ -338,8 +339,8 @@ class RacerEnv(gym.Env):
     def _setup_sidebar(self):
         """
         """
-        logg = getMyLogger(f"c.{__class__.__name__}._setup_sidebar")
-        logg.info(f"Start _setup_sidebar")
+        #  logg = getMyLogger(f"c.{__class__.__name__}._setup_sidebar")
+        #  logg.info(f"Start _setup_sidebar")
 
         # setup fonts to display info
         self._setup_font()
@@ -398,8 +399,8 @@ class RacerEnv(gym.Env):
     def _update_dynamic_sidebar(self, reward=None):
         """fill the info values in the sidebar
         """
-        logg = getMyLogger(f"c.{__class__.__name__}._update_dynamic_sidebar")
-        logg.info(f"Start _update_dynamic_sidebar with reward {reward}")
+        #  logg = getMyLogger(f"c.{__class__.__name__}._update_dynamic_sidebar")
+        #  logg.info(f"Start _update_dynamic_sidebar with reward {reward}")
 
         # reset the Surface
         black = (0, 0, 0)
@@ -441,8 +442,8 @@ class RacerEnv(gym.Env):
     def _setup_font(self):
         """
         """
-        logg = getMyLogger(f"c.{__class__.__name__}._setup_font")
-        logg.info(f"Start _setup_font")
+        #  logg = getMyLogger(f"c.{__class__.__name__}._setup_font")
+        #  logg.info(f"Start _setup_font")
 
         #  logg.debug(f"all fonts {pygame.font.get_fonts()}")
         #  logg.debug(f"default font {pygame.font.get_default_font()}")

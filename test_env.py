@@ -99,7 +99,7 @@ def setup_env():
 def test_interactive_env(args):
     """
     """
-    logg = getMyLogger(f"c.{__name__}.test_interactive_env", "INFO")
+    logg = getMyLogger(f"c.{__name__}.test_interactive_env", "DEBUG")
     logg.info(f"Start test_interactive_env")
 
     fps = args.fps
@@ -116,16 +116,18 @@ def test_interactive_env(args):
     while going:
         logg.info(f"----------    ----------    New frame    ----------    ----------")
 
+        start_frame = timer()
+
         # Handle Input Events
         # https://stackoverflow.com/a/22099654
         for event in pygame.event.get():
-            logg.debug(f"Handling event {event}")
+            #  logg.debug(f"Handling event {event}")
             if event.type == pygame.QUIT:
                 going = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     going = False
-            logg.debug(f"Done handling")
+            #  logg.debug(f"Done handling")
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_d]:  # right
@@ -147,11 +149,24 @@ def test_interactive_env(args):
         else:  # nop
             action = [0, 0]
 
+        logg.debug(f"Do the action {action}")
+
+        mid_frame = timer()
+
         # perform the action
         obs, reward, done, info = racer_env.step(action)
 
+        step_frame = timer()
+
         # draw the new state
         racer_env.render(reward=reward)
+
+        end_frame = timer()
+
+        logg.debug(f"Time for input  {mid_frame-start_frame:.6f} s")
+        logg.debug(f"Time for step   {step_frame-mid_frame:.6f} s")
+        logg.debug(f"Time for render {end_frame-step_frame:.6f} s")
+        logg.debug(f"Time for frame  {end_frame-start_frame:.6f} s")
 
         # wait a bit to limit fps
         clock.tick(fps)
@@ -180,10 +195,12 @@ def test_automatic_env(args):
     i = 0
     while going:
         logg.info(f"----------    ----------    New frame    ----------    ----------")
+
         start_frame = timer()
 
         action = racer_env.action_space.sample()
         logg.debug(f"Do the action {action}")
+
         mid_frame = timer()
 
         obs, reward, done, info = racer_env.step(action)
@@ -194,9 +211,13 @@ def test_automatic_env(args):
         logg.debug(f"Time for step   {end_frame-mid_frame:.6f} s")
         logg.debug(f"Time for frame  {end_frame-start_frame:.6f} s")
 
-        logg.debug(
-            f"Car state: x {info['car_pos_x']} y {info['car_pos_y']} dir {info['car_dir']}"
-        )
+        recap = ""
+        recap += f"Car state: x {info['car_pos_x']}"
+        recap += f" y {info['car_pos_y']}"
+        recap += f" dir {info['car_dir']}"
+        recap += f" speed {info['car_speed']}"
+        recap += f"\t\treward {reward}"
+        logg.debug(recap)
 
         going = not done
 

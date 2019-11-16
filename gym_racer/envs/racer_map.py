@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 from random import randint
 
@@ -8,7 +7,7 @@ from pygame.sprite import Group
 from pygame.sprite import Sprite
 from pygame.transform import rotate
 
-from gym_racer.envs.utils import getMyLogger
+#  from gym_racer.envs.utils import getMyLogger
 
 
 class RacerMap(Group):
@@ -19,8 +18,8 @@ class RacerMap(Group):
     """
 
     def __init__(self, field_wid, field_hei):
-        logg = getMyLogger(f"c.{__name__}.__init__", "INFO")
-        logg.info(f"Start init RacerMap")
+        #  logg = getMyLogger(f"c.{__name__}.__init__", "INFO")
+        #  logg.info(f"Start init RacerMap")
         super().__init__()
 
         self.field_wid = field_wid
@@ -73,7 +72,7 @@ class RacerMap(Group):
     def _create_road_segment(self):
         """Create the bmp for a road segment
         """
-        logg = getMyLogger(f"c.{__name__}._create_road_segment")
+        #  logg = getMyLogger(f"c.{__name__}._create_road_segment")
 
         self.segment_wid = 350
         self.segment_hei = 150
@@ -98,16 +97,14 @@ class RacerMap(Group):
         """turn the map into a np array for fast sensor collision lookup
         """
         #  MAYBE add a map with s_id in it and do the car/road collision with that
-        logg = getMyLogger(f"c.{__name__}._precompute_map", "INFO")
-        logg.debug(f"Start _precompute_map")
+        #  logg = getMyLogger(f"c.{__name__}._precompute_map", "INFO")
+        #  logg.debug(f"Start _precompute_map")
 
         self.raw_map = np.zeros((self.field_wid, self.field_hei), dtype=np.uint8)
         for i in self.segments:
             rect = self.segments[i].rect
-            logg.debug(f"rect {rect}")
-            logg.debug(
-                f"left {rect.left} right {rect.right} top {rect.top} bottom {rect.bottom}"
-            )
+            #  logg.debug(f"rect {rect}")
+            #  logg.debug(f"left {rect.left} right {rect.right} top {rect.top} bottom {rect.bottom}")
             self.raw_map[rect.left : rect.right, rect.top : rect.bottom] = 1
 
 
@@ -116,8 +113,8 @@ class Segment(Sprite):
     """
 
     def __init__(self, segment_orig, direction, cx, cy, s_id):
-        logg = getMyLogger(f"c.{__name__}.__init__", "INFO")
-        logg.debug(f"Start init")
+        #  logg = getMyLogger(f"c.{__name__}.__init__", "INFO")
+        #  logg.debug(f"Start init")
         super().__init__()
 
         self.direction = direction

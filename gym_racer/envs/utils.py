@@ -1,5 +1,4 @@
 import logging
-import pygame
 import numpy as np
 
 from math import cos
