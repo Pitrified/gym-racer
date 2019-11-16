@@ -1,22 +1,21 @@
 import logging
 import numpy as np
-
 from math import ceil
 from math import cos
 from math import radians
 from math import sin
 
+import pygame
 from pygame import Surface
 from pygame.sprite import Sprite
 from pygame.transform import rotate
-import pygame
 
 from gym_racer.envs.utils import getMyLogger
 from gym_racer.envs.utils import compute_rot_matrix
 
 
 class RacerCar(Sprite):
-    def __init__(self, pos_x, pos_y, direction=0, sensor_array_type="diamond"):
+    def __init__(self, pos_x=0, pos_y=0, direction=0, sensor_array_type="diamond"):
         logg = logging.getLogger(f"c.{__name__}.__init__")
         logg.info(f"Start init RacerCar")
         super().__init__()
@@ -150,6 +149,15 @@ class RacerCar(Sprite):
             int_sa = np.array(rotated_sa, dtype=np.int16)
             self.all_sensor_array[dire] = int_sa.transpose()
 
+        # reshape it
+        for dire in range(0, 360, self.dir_step):
+            if self.sensor_array_type == "diamond":
+                self.all_sensor_array[dire] = self.all_sensor_array[dire].reshape(
+                    self.viewfield_size, self.viewfield_size, 2
+                )
+            else:
+                logg.critical(f"Unknown sensor_array_type {self.sensor_array_type}")
+
     def get_current_sensor_array(self):
         """returns the translated sensor array to use
         """
@@ -160,23 +168,31 @@ class RacerCar(Sprite):
 
     def _create_sensor_array_template(self):
         """create the template for the sensor array
+
+        in a convenient shape to rotate it:
+        diamond:
+            * has shape (2, n*n)
+        lidar:
+            * has shape TODO
         """
         logg = getMyLogger(f"c.{__class__.__name__}._create_sensor_array_template")
         logg.debug(f"Start _create_sensor_array_template")
 
         if self.sensor_array_type == "diamond":
-            # create a grid
-            #  self.viewfield_size = 101
-            self.viewfield_size = 301
-            self.viewfield_step = 10
-            #  self.viewfield_step = 25
-            #  self.viewfield_step = 33
+            # create a grid, rotated by 45 degrees
+            #  self.viewfield_size = 20  # number of rows/columns in the sensor
+            #  self.viewfield_size = 4  # number of rows/columns in the sensor
+            self.viewfield_size = 60  # number of rows/columns in the sensor
+            #  self.viewfield_step = 10  # spacing between the dots
+            self.viewfield_step = 5  # spacing between the dots
+
             sat = []
-            for i in range(0, self.viewfield_size, self.viewfield_step):
-                for j in range(0, self.viewfield_size, self.viewfield_step):
+            for i in range(0, self.viewfield_size):
+                for j in range(0, self.viewfield_size):
                     sat.append((i, j))
-            sat = np.array(sat).transpose()
-            logg.debug(f"shape sensor_array_template {sat.shape}")
+            sat = np.array(sat).transpose() * self.viewfield_step
+            #  logg.debug(f"sat {sat}")
+            #  logg.debug(f"shape sensor_array_template {sat.shape}")
 
             # rotate the array so that is a diamond
             rot_mat = compute_rot_matrix(-45)

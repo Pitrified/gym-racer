@@ -1,12 +1,13 @@
 import argparse
 import logging
 import numpy as np
-import pygame
-
 from random import seed
 from timeit import default_timer as timer
 
+import pygame
+
 import gym
+
 import gym_racer
 from gym_racer.envs.utils import getMyLogger
 

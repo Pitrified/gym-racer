@@ -2,10 +2,10 @@ import logging
 import numpy as np
 
 from pygame import Surface
+from pygame import draw
 from pygame.sprite import Group
 from pygame.sprite import Sprite
 from pygame.transform import rotate
-from pygame import draw
 
 from gym_racer.envs.utils import getMyLogger
 

@@ -1,23 +1,27 @@
-import gym
-import pygame
-
+import numpy as np
 from random import choice
 
+import gym
+from gym import spaces
+
+import pygame
 from pygame.sprite import spritecollide
 
-from gym_racer.envs.utils import getMyLogger
 from gym_racer.envs.racer_car import RacerCar
 from gym_racer.envs.racer_map import RacerMap
+from gym_racer.envs.utils import getMyLogger
 
 
 class RacerEnv(gym.Env):
     metadata = {"render.modes": ["human"]}
 
-    def __init__(self):
+    def __init__(self, sensor_array_type="diamond"):
         """
         """
         logg = getMyLogger(f"c.{__class__.__name__}.__init__")
         logg.info(f"Start init RacerEnv")
+
+        self.sensor_array_type = sensor_array_type
 
         # racing field dimensions
         self.field_wid = 900
@@ -52,7 +56,7 @@ class RacerEnv(gym.Env):
         self._setup_sidebar()
 
         # setup the agent
-        self.racer_car = RacerCar(100, 100)
+        self.racer_car = RacerCar(sensor_array_type=self.sensor_array_type)
 
         # add the car to the list of sprites to render
         self.allsprites = pygame.sprite.RenderPlain((self.racer_car))
@@ -69,7 +73,8 @@ class RacerEnv(gym.Env):
         self.sa_surf = pygame.Surface(self.field_size)
         self.sa_surf = self.sa_surf.convert()
 
-        # Define action and observation space TODO
+        # Define action and observation space
+        self._setup_action_obs_space()
 
         self.reset()
 
@@ -104,18 +109,22 @@ class RacerEnv(gym.Env):
         logg.info(f"Start env step, action: '{action}'")
 
         # update the car
+        # TODO refactor this for MultiDiscrete action space
         self.racer_car.step(action)
 
         # compute the reward for this action
         reward, done = self._compute_reward()
 
-        # get observation from sensor array
-        sa_collisions = self._collide_sensor_array()
+        # get collisions from sensor array
+        self._collide_sensor_array()
+
+        # analyze the collisions
+        obs = self._analyze_collisions()
 
         # draw the new state
-        self.render(sa_collisions=sa_collisions, reward=reward)
+        self.render(reward=reward)
 
-        return sa_collisions, reward, done, None
+        return obs, reward, done, None
 
     def reset(self):
         """Reset the state of the environment to an initial state
@@ -126,7 +135,7 @@ class RacerEnv(gym.Env):
         direction, pos_x, pos_y = choice(self.racer_map.seg_info)
         self.racer_car.reset(pos_x, pos_y, direction)
 
-    def render(self, mode="human", close=False, sa_collisions=None, reward=None):
+    def render(self, mode="human", close=False, reward=None):
         """
         # Render the environment to the screen
         """
@@ -145,7 +154,7 @@ class RacerEnv(gym.Env):
             #  allsprites.draw(field)
 
             # draw the sensor surface
-            self._draw_sensor_array(sa_collisions)
+            self._draw_sensor_array()
             self.screen.blit(self.sa_surf, (0, 0))
 
             # update the dynamic sidebar
@@ -156,6 +165,20 @@ class RacerEnv(gym.Env):
 
         else:
             logg.critical(f"Unknown render mode {mode}")
+
+    def _setup_action_obs_space(self):
+        """
+        """
+        self.action_space = spaces.MultiDiscrete([3, 3])
+        if self.sensor_array_type == "diamond":
+            HEIGHT = 10
+            WIDTH = 10
+            N_CHANNELS = 10
+            self.observation_space = spaces.Box(
+                low=0, high=255, shape=(HEIGHT, WIDTH, N_CHANNELS), dtype=np.uint8
+            )
+        else:
+            logg.critical(f"Unknown sensor_array_type {self.sensor_array_type}")
 
     def _compute_reward(self):
         """compute the reward for moving on the map
@@ -222,22 +245,29 @@ class RacerEnv(gym.Env):
         self.curr_sa = self.racer_car.get_current_sensor_array()
         logg.debug(f"shape curr_sa {self.curr_sa.shape}")
 
-        sa_collisions = []
-        for s_pos in self.curr_sa:
-            #  logg.debug(f"s_pos {s_pos}")
-            if (
-                s_pos[0] < 0
-                or s_pos[0] >= self.field_wid
-                or s_pos[1] < 0
-                or s_pos[1] >= self.field_hei
-            ):
-                sa_collisions.append(0)
-            else:
-                sa_collisions.append(self.racer_map.raw_map[s_pos[0], s_pos[1]])
+        # copy the shape of curr_sa, but with one channel
+        m = self.curr_sa.shape[0]
+        n = self.curr_sa.shape[1]
+        self.sa_collisions = np.zeros((m, n), dtype=np.uint8)
+        for i, row in enumerate(self.curr_sa):
+            for j, s_pos in enumerate(row):
+                #  logg.debug(f"s_pos {s_pos.shape} : {s_pos}")
+                # check that the pos is inside the field
+                if (0 <= s_pos[0] < self.field_wid) and (
+                    0 <= s_pos[1] < self.field_hei
+                ):
+                    # extract the value of the map (road - noroad) at that pos
+                    self.sa_collisions[i, j] = self.racer_map.raw_map[
+                        s_pos[0], s_pos[1]
+                    ]
 
-        return sa_collisions
+    def _analyze_collisions(self):
+        """parse the collision matrix into obs
+        """
+        obs = None
+        return obs
 
-    def _draw_sensor_array(self, sa_collisions=None):
+    def _draw_sensor_array(self):
         """draw the sensor_array on a Surface
         """
         logg = getMyLogger(f"c.{__class__.__name__}._draw_sensor_array")
@@ -253,14 +283,16 @@ class RacerEnv(gym.Env):
         the_color = (0, 255, 0)
         the_second_color = (0, 0, 255)
         color = the_color
-        the_size = 3
-        for i, s_pos in enumerate(self.curr_sa):
-            if not sa_collisions is None:
-                if sa_collisions[i] == 1:
-                    color = the_second_color
-                else:
-                    color = the_color
-            pygame.draw.circle(self.sa_surf, color, s_pos, the_size)
+        #  the_size = 3
+        the_size = 1
+        for i, row in enumerate(self.curr_sa):
+            for j, s_pos in enumerate(row):
+                if not self.sa_collisions is None:
+                    if self.sa_collisions[i, j] == 1:
+                        color = the_second_color
+                    else:
+                        color = the_color
+                pygame.draw.circle(self.sa_surf, color, s_pos, the_size)
 
     def _setup_sidebar(self):
         """
@@ -355,7 +387,7 @@ class RacerEnv(gym.Env):
         if not reward is None:
             reward_val = f"{reward}"
         else:
-            reward_val = f"0"
+            reward_val = f"-"
         text_info_reward = self.main_font.render(
             reward_val, 1, self.font_info_color, self.sidebar_back_color,
         )
