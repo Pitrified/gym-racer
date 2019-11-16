@@ -164,12 +164,13 @@ class RacerEnv(gym.Env):
             pygame.display.flip()
 
         else:
-            logg.critical(f"Unknown render mode {mode}")
+            raise ValueError(f"Unknown render mode {mode}")
 
     def _setup_action_obs_space(self):
         """
         """
         self.action_space = spaces.MultiDiscrete([3, 3])
+
         if self.sensor_array_type == "diamond":
             HEIGHT = 10
             WIDTH = 10
@@ -178,7 +179,7 @@ class RacerEnv(gym.Env):
                 low=0, high=255, shape=(HEIGHT, WIDTH, N_CHANNELS), dtype=np.uint8
             )
         else:
-            logg.critical(f"Unknown sensor_array_type {self.sensor_array_type}")
+            raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
 
     def _compute_reward(self):
         """compute the reward for moving on the map
@@ -408,7 +409,7 @@ class RacerEnv(gym.Env):
         #  logg.debug(f"match font hack {pygame.font.match_font('hack')}")
 
         if not pygame.font:
-            logg.critical("You need fonts to put text on the screen")
+            raise RuntimeError("You need fonts to put text on the screen")
         # create a new Font object (from a file if you want)
         #  self.main_font = pygame.font.Font(None, 36)
         #  self.main_font = pygame.font.Font(pygame.font.match_font("hack"), 16)

@@ -156,7 +156,7 @@ class RacerCar(Sprite):
                     self.viewfield_size, self.viewfield_size, 2
                 )
             else:
-                logg.critical(f"Unknown sensor_array_type {self.sensor_array_type}")
+                raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
 
     def get_current_sensor_array(self):
         """returns the translated sensor array to use
@@ -200,7 +200,7 @@ class RacerCar(Sprite):
             #  logg.debug(f"sat {sat}")
             logg.debug(f"shape sensor_array_template {sat.shape}")
         else:
-            logg.critical(f"Unknown sensor_array_type {self.sensor_array_type}")
+            raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
 
         return sat
 

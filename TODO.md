@@ -10,3 +10,5 @@ Change logg.critical to exception raised
 
 Remove sacollisions and reward as arguments of render, they always exist
 
+Create a new test env for non-interactive test
+
