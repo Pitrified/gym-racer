@@ -120,7 +120,14 @@ class RacerEnv(gym.Env):
         # analyze the collisions
         obs = self._analyze_collisions()
 
-        return obs, reward, done, None
+        # create recap of env state
+        info = {
+            "car_pos_x": self.racer_car.pos_x,
+            "car_pos_y": self.racer_car.pos_y,
+            "car_dir": self.racer_car.direction,
+        }
+
+        return obs, reward, done, info
 
     def reset(self):
         """Reset the state of the environment to an initial state

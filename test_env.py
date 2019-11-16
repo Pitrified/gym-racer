@@ -127,23 +127,23 @@ def test_interactive_env(args):
             logg.debug(f"Done handling")
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_d]:   # right
+        if keys[pygame.K_d]:  # right
             action = [0, 2]
-        elif keys[pygame.K_a]: # left
+        elif keys[pygame.K_a]:  # left
             action = [0, 1]
-        elif keys[pygame.K_w]: # up
+        elif keys[pygame.K_w]:  # up
             action = [1, 0]
-        elif keys[pygame.K_x]: # down
+        elif keys[pygame.K_x]:  # down
             action = [2, 0]
-        elif keys[pygame.K_q]: # upleft
+        elif keys[pygame.K_q]:  # upleft
             action = [1, 2]
-        elif keys[pygame.K_e]: # upright
+        elif keys[pygame.K_e]:  # upright
             action = [1, 2]
-        elif keys[pygame.K_z]: # downleft
+        elif keys[pygame.K_z]:  # downleft
             action = [2, 1]
-        elif keys[pygame.K_c]: # downright
+        elif keys[pygame.K_c]:  # downright
             action = [2, 2]
-        else: # nop
+        else:  # nop
             action = [0, 0]
 
         # perform the action
@@ -178,12 +178,20 @@ def test_automatic_env(args):
     i = 0
     while going:
         logg.info(f"----------    ----------    New frame    ----------    ----------")
+        start_frame = timer()
 
         action = racer_env.action_space.sample()
         logg.debug(f"Do the action {action}")
 
         obs, reward, done, info = racer_env.step(action)
-        racer_env.render(reward=reward)
+        #  racer_env.render(reward=reward)
+
+        end_frame = timer()
+        logg.debug(f"Time for frame {end_frame-start_frame:.6f} s")
+
+        logg.debug(
+            f"Car state: x {info['car_pos_x']} y {info['car_pos_y']} dir {info['car_dir']}"
+        )
 
         going = not done
 
