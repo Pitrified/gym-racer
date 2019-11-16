@@ -50,35 +50,23 @@ class RacerCar(Sprite):
 
     def step(self, action):
         """Perform the action
+
+        Two discrete action spaces:
+            1) accelerate:  NOOP[0], UP[1], DOWN[2]
+            2) steer:  NOOP[0], LEFT[1], RIGHT[2]
         """
         logg = logging.getLogger(f"c.{__name__}.step")
         logg.debug(f"Doing action {action}")
 
-        if action == "up":
+        if action[0] == 1:
             self._accelerate("up")
-        elif action == "down":
+        elif action[0] == 2:
             self._accelerate("down")
 
-        elif action == "right":
-            self._steer("right")
-        elif action == "left":
+        if action[1] == 1:
             self._steer("left")
-
-        elif action == "upright":
-            self._accelerate("up")
+        elif action[1] == 2:
             self._steer("right")
-        elif action == "upleft":
-            self._accelerate("up")
-            self._steer("left")
-        elif action == "downright":
-            self._accelerate("down")
-            self._steer("right")
-        elif action == "downleft":
-            self._accelerate("down")
-            self._steer("left")
-
-        elif action == "nop":
-            pass
 
         # compute delta
         pos_x_d = cos(radians(360 - self.direction)) * self.speed

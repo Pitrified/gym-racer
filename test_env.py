@@ -28,6 +28,9 @@ def parse_arguments():
         default=-1,
         help="how many frames to run, -1 is unlimited",
     )
+    parser.add_argument(
+        "-i", "--interactive", action="store_true", help="start interactive env"
+    )
 
     # last line to parse the args
     args = parser.parse_args()
@@ -92,11 +95,11 @@ def setup_env():
     return args
 
 
-def run_test_env(args):
+def test_interactive_env(args):
     """
     """
-    logg = getMyLogger(f"c.{__name__}.run_test_env", "INFO")
-    logg.info(f"Start run_test_env")
+    logg = getMyLogger(f"c.{__name__}.test_interactive_env", "INFO")
+    logg.info(f"Start test_interactive_env")
 
     fps = args.fps
     num_frames = args.num_frames
@@ -124,24 +127,30 @@ def run_test_env(args):
             logg.debug(f"Done handling")
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_d]:
-            racer_env.step("right")
-        elif keys[pygame.K_a]:
-            racer_env.step("left")
-        elif keys[pygame.K_w]:
-            racer_env.step("up")
-        elif keys[pygame.K_x]:
-            racer_env.step("down")
-        elif keys[pygame.K_q]:
-            racer_env.step("upleft")
-        elif keys[pygame.K_e]:
-            racer_env.step("upright")
-        elif keys[pygame.K_z]:
-            racer_env.step("downleft")
-        elif keys[pygame.K_c]:
-            racer_env.step("downright")
-        else:
-            racer_env.step("nop")
+        if keys[pygame.K_d]:   # right
+            action = [0, 2]
+        elif keys[pygame.K_a]: # left
+            action = [0, 1]
+        elif keys[pygame.K_w]: # up
+            action = [1, 0]
+        elif keys[pygame.K_x]: # down
+            action = [2, 0]
+        elif keys[pygame.K_q]: # upleft
+            action = [1, 2]
+        elif keys[pygame.K_e]: # upright
+            action = [1, 2]
+        elif keys[pygame.K_z]: # downleft
+            action = [2, 1]
+        elif keys[pygame.K_c]: # downright
+            action = [2, 2]
+        else: # nop
+            action = [0, 0]
+
+        # perform the action
+        obs, reward, done, info = racer_env.step(action)
+
+        # draw the new state
+        racer_env.render(reward=reward)
 
         clock.tick(fps)
 
@@ -151,6 +160,42 @@ def run_test_env(args):
                 going = False
 
 
+def test_automatic_env(args):
+    """
+    """
+    logg = getMyLogger(f"c.{__name__}.test_automatic_env", "DEBUG")
+    logg.info(f"Start test_automatic_env")
+
+    fps = args.fps
+    num_frames = args.num_frames
+
+    racer_env = gym.make("racer-v0")
+
+    logg.debug(f"Action Space {racer_env.action_space}")
+    logg.debug(f"State Space {racer_env.observation_space}")
+
+    going = True
+    i = 0
+    while going:
+        logg.info(f"----------    ----------    New frame    ----------    ----------")
+
+        action = racer_env.action_space.sample()
+        logg.debug(f"Do the action {action}")
+
+        obs, reward, done, info = racer_env.step(action)
+        racer_env.render(reward=reward)
+
+        going = not done
+
+        if num_frames > 0:
+            i += 1
+            if i == num_frames:
+                going = False
+
+
 if __name__ == "__main__":
     args = setup_env()
-    run_test_env(args)
+    if args.interactive:
+        test_interactive_env(args)
+    else:
+        test_automatic_env(args)

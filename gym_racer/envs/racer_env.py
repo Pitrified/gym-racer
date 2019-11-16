@@ -109,7 +109,6 @@ class RacerEnv(gym.Env):
         logg.info(f"Start env step, action: '{action}'")
 
         # update the car
-        # TODO refactor this for MultiDiscrete action space
         self.racer_car.step(action)
 
         # compute the reward for this action
@@ -120,9 +119,6 @@ class RacerEnv(gym.Env):
 
         # analyze the collisions
         obs = self._analyze_collisions()
-
-        # draw the new state
-        self.render(reward=reward)
 
         return obs, reward, done, None
 
@@ -172,11 +168,11 @@ class RacerEnv(gym.Env):
         self.action_space = spaces.MultiDiscrete([3, 3])
 
         if self.sensor_array_type == "diamond":
-            HEIGHT = 10
-            WIDTH = 10
-            N_CHANNELS = 10
+            HEIGHT = self.racer_car.viewfield_size
+            WIDTH = self.racer_car.viewfield_size
+            N_CHANNELS = 1
             self.observation_space = spaces.Box(
-                low=0, high=255, shape=(HEIGHT, WIDTH, N_CHANNELS), dtype=np.uint8
+                low=0, high=1, shape=(HEIGHT, WIDTH, N_CHANNELS), dtype=np.uint8
             )
         else:
             raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
