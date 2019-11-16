@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+from random import randint
 
 from pygame import Surface
 from pygame import draw
@@ -39,6 +40,24 @@ class RacerMap(Group):
         ]
         self.segments = {}
         self.num_segments = len(self.seg_info)
+
+        flip_segments = randint(0, 1)
+
+        if flip_segments:
+            for i in range(self.num_segments):
+                # move the segments to preserve structure
+                if self.seg_info[i][0] == 0:
+                    self.seg_info[i][1] += self.segment_hei
+                elif self.seg_info[i][0] == 180:
+                    self.seg_info[i][1] -= self.segment_hei
+                elif self.seg_info[i][0] == 90:
+                    self.seg_info[i][2] -= self.segment_hei
+                elif self.seg_info[i][0] == 270:
+                    self.seg_info[i][2] += self.segment_hei
+
+                # rotate segments
+                self.seg_info[i][0] += 180
+                self.seg_info[i][0] %= 360
 
         # create the various segments, with unique id_
         for id_ in range(self.num_segments):
