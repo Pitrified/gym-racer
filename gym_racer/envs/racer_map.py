@@ -17,13 +17,14 @@ class RacerMap(Group):
     A numpy array as big as the field is available to check if a pos is road or not
     """
 
-    def __init__(self, field_wid, field_hei):
+    def __init__(self, field_wid, field_hei, render_mode):
         #  logg = getMyLogger(f"c.{__name__}.__init__", "INFO")
         #  logg.info(f"Start init RacerMap")
         super().__init__()
 
         self.field_wid = field_wid
         self.field_hei = field_hei
+        self.render_mode = render_mode
 
         self._create_road_segment()
 
@@ -76,22 +77,31 @@ class RacerMap(Group):
 
         self.segment_wid = 350
         self.segment_hei = 150
-        line_wid = 2
-        mid_hei = self.segment_hei // 2
 
-        seg_surf = Surface((self.segment_wid, self.segment_hei))
-        seg_surf = seg_surf.convert()
-        segment_grey = (128, 128, 128)
-        seg_surf.fill(segment_grey)
+        if self.render_mode == "human":
+            line_wid = 2
+            mid_hei = self.segment_hei // 2
 
-        # Rect(left, top, width, height) -> Rect
-        line_white = (255, 255, 255)
-        line_rect = 0, mid_hei - line_wid, self.segment_wid, line_wid
-        draw.rect(seg_surf, line_white, line_rect)
-        line_rect = self.segment_wid - line_wid, 0, line_wid, self.segment_hei
-        draw.rect(seg_surf, line_white, line_rect)
+            seg_surf = Surface((self.segment_wid, self.segment_hei))
+            seg_surf = seg_surf.convert()
+            segment_grey = (128, 128, 128)
+            seg_surf.fill(segment_grey)
 
-        self.segment_orig = seg_surf
+            # Rect(left, top, width, height) -> Rect
+            line_white = (255, 255, 255)
+            line_rect = 0, mid_hei - line_wid, self.segment_wid, line_wid
+            draw.rect(seg_surf, line_white, line_rect)
+            line_rect = self.segment_wid - line_wid, 0, line_wid, self.segment_hei
+            draw.rect(seg_surf, line_white, line_rect)
+
+            self.segment_orig = seg_surf
+
+        elif self.render_mode == "console":
+            seg_surf = Surface((self.segment_wid, self.segment_hei))
+            self.segment_orig = seg_surf
+
+        else:
+            raise ValueError(f"Unknown render mode {self.render_mode}")
 
     def _precompute_map(self):
         """turn the map into a np array for fast sensor collision lookup

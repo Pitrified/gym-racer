@@ -1,5 +1,6 @@
 import numpy as np
 from random import choice
+
 #  from timeit import default_timer as timer
 
 import gym
@@ -10,20 +11,22 @@ from pygame.sprite import spritecollide
 
 from gym_racer.envs.racer_car import RacerCar
 from gym_racer.envs.racer_map import RacerMap
+
 #  from gym_racer.envs.utils import getMyLogger
 
 
 class RacerEnv(gym.Env):
-    metadata = {"render.modes": ["human"]}
+    metadata = {"render.modes": ["human", "console"]}
     # TODO how to advertise sensor_array_type properly?
 
-    def __init__(self, sensor_array_type="lidar"):
+    def __init__(self, sensor_array_type="lidar", render_mode="console"):
         """
         """
         #  logg = getMyLogger(f"c.{__class__.__name__}.__init__")
         #  logg.info(f"Start init RacerEnv")
 
         self.sensor_array_type = sensor_array_type
+        self.render_mode = render_mode
 
         # racing field dimensions
         self.field_wid = 900
@@ -40,47 +43,29 @@ class RacerEnv(gym.Env):
         self.total_hei = self.field_hei
         self.total_size = (self.total_wid, self.total_hei)
 
-        # start pygame
-        pygame.init()
-        self.screen = pygame.display.set_mode(self.total_size)
-        pygame.display.set_caption("Racer")
+        # setup pygame environment
+        self._setup_pygame()
 
-        # create the background that will be redrawn each iteration
-        self.background = pygame.Surface(self.total_size)
-        self.background = self.background.convert()
-
-        # Create the playing field
-        self.field = pygame.Surface(self.field_size)
-        self.field = self.field.convert()
-        self.field.fill((0, 0, 0))
-
-        # where the info will be
-        self._setup_sidebar()
-
-        # setup the agent
-        self.racer_car = RacerCar(sensor_array_type=self.sensor_array_type)
+        # setup the car
+        self.racer_car = RacerCar(
+            sensor_array_type=self.sensor_array_type, render_mode=self.render_mode,
+        )
 
         # add the car to the list of sprites to render
         self.allsprites = pygame.sprite.RenderPlain((self.racer_car))
 
         # setup the road
-        self.racer_map = RacerMap(self.field_wid, self.field_hei)
-        # draw map on the field, it is static, so there is no need to redraw it every time
-        self.racer_map.draw(self.field)
+        self.racer_map = RacerMap(
+            self.field_wid, self.field_hei, render_mode=self.render_mode
+        )
 
-        # draw the field (with the map on it) on the background
-        self.background.blit(self.field, (0, 0))
-
-        # create the surface for the sensor_array
-        self.sa_surf = pygame.Surface(self.field_size)
-        self.sa_surf = self.sa_surf.convert()
-        # black colors will not be blit
-        black = (0, 0, 0)
-        self.sa_surf.set_colorkey(black)
+        # finish setup pygame environment
+        self._finish_setup_pygame()
 
         # Define action and observation space
         self._setup_action_obs_space()
 
+        # MAYBE this is called by the user to get the first obs anyway
         self.reset()
 
     def step(self, action):
@@ -145,11 +130,19 @@ class RacerEnv(gym.Env):
         direction, pos_x, pos_y = choice(self.racer_map.seg_info)
         self.racer_car.reset(pos_x, pos_y, direction)
 
-    def render(self, mode="human", close=False, reward=None):
+    def render(self, mode="console", close=False, reward=None):
         """Render the environment to the screen
         """
         #  logg = getMyLogger(f"c.{__class__.__name__}.render")
         #  logg.debug(f"Start render")
+
+        if mode == "human" and not self.render_mode == "human":
+            info_str = f"You tried to render the env in '{mode}' mode,"
+            info_str += f" but the env is in '{self.render_mode}' mode."
+            info_str += f"\nCreate a new env if you want to render to screen."
+            info_str += f"\nI'll render as 'console'."
+            print(info_str)
+            mode = "console"
 
         if mode == "human":
             # Draw Everything again, every frame
@@ -171,7 +164,10 @@ class RacerEnv(gym.Env):
             # update the display
             pygame.display.flip()
 
-        # MAYBE add console render
+        elif mode == "console":
+            info_str = f"State of the env:"
+            info_str += f"\tReward: {reward}"
+            print(info_str)
 
         else:
             raise ValueError(f"Unknown render mode {mode}")
@@ -312,6 +308,54 @@ class RacerEnv(gym.Env):
             raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
 
         return obs
+
+    def _setup_pygame(self):
+        """
+        """
+        if self.render_mode == "human":
+            # start pygame
+            pygame.init()
+            self.screen = pygame.display.set_mode(self.total_size)
+            pygame.display.set_caption("Racer")
+
+            # create the background that will be redrawn each iteration
+            self.background = pygame.Surface(self.total_size)
+            self.background = self.background.convert()
+
+            # Create the playing field
+            self.field = pygame.Surface(self.field_size)
+            self.field = self.field.convert()
+            self.field.fill((0, 0, 0))
+
+            # where the info will be
+            self._setup_sidebar()
+
+            # create the surface for the sensor_array
+            self.sa_surf = pygame.Surface(self.field_size)
+            self.sa_surf = self.sa_surf.convert()
+            # black colors will not be blit
+            black = (0, 0, 0)
+            self.sa_surf.set_colorkey(black)
+
+        elif self.render_mode == "console":
+            pass
+
+        else:
+            raise ValueError(f"Unknown render mode {self.render_mode}")
+
+    def _finish_setup_pygame(self):
+        if self.render_mode == "human":
+            # draw map on the field, it is static, so there is no need to redraw it every time
+            self.racer_map.draw(self.field)
+
+            # draw the field (with the map on it) on the background
+            self.background.blit(self.field, (0, 0))
+
+        elif self.render_mode == "console":
+            pass
+
+        else:
+            raise ValueError(f"Unknown render mode {self.render_mode}")
 
     def _draw_sensor_array(self):
         """draw the sensor_array on a Surface

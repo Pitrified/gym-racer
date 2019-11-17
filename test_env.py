@@ -105,7 +105,7 @@ def test_interactive_env(args):
     fps = args.fps
     num_frames = args.num_frames
 
-    racer_env = gym.make("racer-v0")
+    racer_env = gym.make("racer-v0", render_mode="human")
 
     # clock for interactive play
     clock = pygame.time.Clock()
@@ -159,7 +159,7 @@ def test_interactive_env(args):
         step_frame = timer()
 
         # draw the new state
-        racer_env.render(reward=reward)
+        racer_env.render(mode="human", reward=reward)
 
         end_frame = timer()
 
@@ -180,13 +180,15 @@ def test_interactive_env(args):
 def test_automatic_env(args):
     """
     """
-    logg = getMyLogger(f"c.{__name__}.test_automatic_env", "DEBUG")
+    #  logg = getMyLogger(f"c.{__name__}.test_automatic_env", "DEBUG")
+    logg = getMyLogger(f"c.{__name__}.test_automatic_env", "INFO")
     logg.info(f"Start test_automatic_env")
 
     fps = args.fps
     num_frames = args.num_frames
 
-    racer_env = gym.make("racer-v0")
+    #  racer_env = gym.make("racer-v0")
+    racer_env = gym.make("racer-v0", render_mode="human")
 
     logg.debug(f"Action Space {racer_env.action_space}")
     logg.debug(f"State Space {racer_env.observation_space}")
@@ -194,7 +196,7 @@ def test_automatic_env(args):
     going = True
     i = 0
     while going:
-        logg.info(f"----------    ----------    New frame    ----------    ----------")
+        logg.debug(f"----------    ----------    New frame    ----------    ----------")
 
         start_frame = timer()
 
@@ -204,7 +206,8 @@ def test_automatic_env(args):
         mid_frame = timer()
 
         obs, reward, done, info = racer_env.step(action)
-        racer_env.render(reward=reward)
+        racer_env.render(mode="human", reward=reward)
+        #  racer_env.render(mode="console", reward=reward)
 
         end_frame = timer()
         logg.debug(f"Time for sample {mid_frame-start_frame:.6f} s")

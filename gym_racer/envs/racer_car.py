@@ -14,9 +14,17 @@ from gym_racer.envs.utils import compute_rot_matrix
 
 
 class RacerCar(Sprite):
-    def __init__(self, pos_x=0, pos_y=0, direction=0, sensor_array_type="diamond"):
+    def __init__(
+        self,
+        pos_x=0,
+        pos_y=0,
+        direction=0,
+        sensor_array_type="lidar",
+        render_mode="human",
+    ):
         #  logg = logging.getLogger(f"c.{__name__}.__init__")
         #  logg.info(f"Start init RacerCar")
+
         super().__init__()
 
         self.pos_x = pos_x
@@ -25,6 +33,7 @@ class RacerCar(Sprite):
         self.precise_y = pos_y
 
         self.sensor_array_type = sensor_array_type
+        self.render_mode = render_mode
 
         self.direction = direction  # in degrees
         #  self.dir_step = 3
@@ -35,17 +44,12 @@ class RacerCar(Sprite):
         # viscous drag coefficient
         self.drag_coeff = 0.5
 
-        # generate the car image and create all rotated versions
-        self._create_car_image()
-        self._rotate_car_image()
-
-        # pick the correct image and place it
-        self.image = self.rot_car_image[self.direction]
-        self.rect = self.rot_car_rect[self.direction]
-        self.rect.center = self.pos_x, self.pos_y
-
         # setup the sensor_array_template
         self._create_car_sensors()
+
+        # setup pygame objects and attributes: rect is always needed, image
+        # only if render_mode is 'human'
+        self._setup_pygame()
 
     def step(self, action):
         """Perform the action
@@ -78,10 +82,12 @@ class RacerCar(Sprite):
         self.pos_y = int(self.precise_y)
         #  logg.debug(f"Car state: x {self.pos_x} y {self.pos_y} dir {self.direction}")
 
-        # pick the rotated image and place it
-        self.image = self.rot_car_image[self.direction]
+        # update Sprite rect and image
         self.rect = self.rot_car_rect[self.direction]
         self.rect.center = self.pos_x, self.pos_y
+        if self.render_mode == "human":
+            # pick the correct image and place it
+            self.image = self.rot_car_image[self.direction]
 
     def reset(self, pos_x, pos_y, direction=0):
         """Reset the car state
@@ -92,8 +98,13 @@ class RacerCar(Sprite):
         self.precise_y = pos_y
 
         self.direction = direction  # in degrees
-
         self.speed = 0
+
+        self.rect = self.rot_car_rect[self.direction]
+        self.rect.center = self.pos_x, self.pos_y
+        if self.render_mode == "human":
+            # pick the correct image and place it
+            self.image = self.rot_car_image[self.direction]
 
     def _steer(self, action):
         """Steer the car
@@ -217,6 +228,22 @@ class RacerCar(Sprite):
 
         return sat
 
+    def _setup_pygame(self):
+        """
+        """
+        # generate the car image and create all rotated versions
+        self._create_car_image()
+        self._rotate_car_image()
+
+        # always needed
+        self.rect = self.rot_car_rect[self.direction]
+        self.rect.center = self.pos_x, self.pos_y
+
+        # undate the image attribute only if it needs to be shown
+        if self.render_mode == "human":
+            # pick the correct image and place it
+            self.image = self.rot_car_image[self.direction]
+
     def _create_car_image(self):
         """create the car sprite image and the rect
 
@@ -238,68 +265,79 @@ class RacerCar(Sprite):
         # place the car so that it touches the border of the surf
         car_top = w_radius
         car_left = ceil(car_wid / 2)
+        car_size = car_len + car_wid, car_wid + w_wid
 
-        # create a surf just big enough for the car
-        car_surf_size = (car_len + car_wid, car_wid + w_wid)
-        car_surf = Surface(car_surf_size)
-        # convert the surface for fastest blitting
-        # same pixel format as the display Surface
-        car_surf = car_surf.convert()
+        if self.render_mode == "human":
+            # create a surf just big enough for the car
+            car_surf = Surface(car_size)
+            # convert the surface for fastest blitting
+            # same pixel format as the display Surface
+            car_surf = car_surf.convert()
 
-        black = (0, 0, 0)
-        car_surf.fill(black)
-        # black colors will not be blit
-        #  car_surf.set_colorkey(black)
-        # RLEACCEL should make blitting faster
-        car_surf.set_colorkey(black, pygame.RLEACCEL)
-        # show the surface area to debug
-        #  car_surf.fill((0, 0, 255))
+            black = (0, 0, 0)
+            car_surf.fill(black)
+            # black colors will not be blit
+            #  car_surf.set_colorkey(black)
+            # RLEACCEL should make blitting faster
+            car_surf.set_colorkey(black, pygame.RLEACCEL)
+            # show the surface area to debug
+            #  car_surf.fill((0, 0, 255))
 
-        # top left wheel
-        w_top = car_top - w_radius
-        w_left = car_left + delta + w_radius
-        self._draw_oval(car_surf, w_top, w_left, w_wid, w_len, w_color)
+            # top left wheel
+            w_top = car_top - w_radius
+            w_left = car_left + delta + w_radius
+            self._draw_oval(car_surf, w_top, w_left, w_wid, w_len, w_color)
 
-        # top right wheel
-        w_top = car_top - w_radius
-        w_left = car_left + car_len - (delta + w_radius + w_len)
-        self._draw_oval(car_surf, w_top, w_left, w_wid, w_len, w_color)
+            # top right wheel
+            w_top = car_top - w_radius
+            w_left = car_left + car_len - (delta + w_radius + w_len)
+            self._draw_oval(car_surf, w_top, w_left, w_wid, w_len, w_color)
 
-        # bottom left wheel
-        w_top = car_top + car_wid - w_radius
-        w_left = car_left + delta + w_radius
-        self._draw_oval(car_surf, w_top, w_left, w_wid, w_len, w_color)
+            # bottom left wheel
+            w_top = car_top + car_wid - w_radius
+            w_left = car_left + delta + w_radius
+            self._draw_oval(car_surf, w_top, w_left, w_wid, w_len, w_color)
 
-        # bottom right wheel
-        w_top = car_top + car_wid - w_radius
-        w_left = car_left + car_len - (delta + w_radius + w_len)
-        self._draw_oval(car_surf, w_top, w_left, w_wid, w_len, w_color)
+            # bottom right wheel
+            w_top = car_top + car_wid - w_radius
+            w_left = car_left + car_len - (delta + w_radius + w_len)
+            self._draw_oval(car_surf, w_top, w_left, w_wid, w_len, w_color)
 
-        # body
-        body_color = (255, 0, 0)
-        self._draw_oval(car_surf, car_top, car_left, car_wid, car_len, body_color)
+            # body
+            body_color = (255, 0, 0)
+            self._draw_oval(car_surf, car_top, car_left, car_wid, car_len, body_color)
 
-        # windshield
-        wind_wid1 = 4
-        wind_wid2 = 7
-        # vertical mid point
-        wind_mid = car_top + car_wid // 2
-        # horizontal points 52 46 36 36 46
-        wind_hpos = car_len - 2
-        d1 = 10
-        d2 = 16
-        wind_points = [
-            (wind_hpos + d2, wind_mid - 1),
-            (wind_hpos + d1, wind_mid - wind_wid2),
-            (wind_hpos, wind_mid - wind_wid1),
-            (wind_hpos, wind_mid + wind_wid1 - 1),
-            (wind_hpos + d1, wind_mid + wind_wid2 - 1),
-            (wind_hpos + d2, wind_mid),
-        ]
-        wind_color = (0, 255, 255)
-        pygame.draw.polygon(car_surf, wind_color, wind_points)
+            # windshield
+            wind_wid1 = 4
+            wind_wid2 = 7
+            # vertical mid point
+            wind_mid = car_top + car_wid // 2
+            # horizontal points 52 46 36 36 46
+            wind_hpos = car_len - 2
+            d1 = 10
+            d2 = 16
+            wind_points = [
+                (wind_hpos + d2, wind_mid - 1),
+                (wind_hpos + d1, wind_mid - wind_wid2),
+                (wind_hpos, wind_mid - wind_wid1),
+                (wind_hpos, wind_mid + wind_wid1 - 1),
+                (wind_hpos + d1, wind_mid + wind_wid2 - 1),
+                (wind_hpos + d2, wind_mid),
+            ]
+            wind_color = (0, 255, 255)
+            pygame.draw.polygon(car_surf, wind_color, wind_points)
 
-        self.orig_image = car_surf
+            self.orig_image = car_surf
+
+        elif self.render_mode == "console":
+            # if the render_mode is console, only the rect are needed (to
+            # collide with the road) so an empty surface as big as the car is
+            # enough, and will be only used to create the rotated rectangles
+            car_surf = Surface(car_size)
+            self.orig_image = car_surf
+
+        else:
+            raise ValueError(f"Unknown render mode {self.render_mode}")
 
     def _draw_oval(self, surf, top, left, width, length, color):
         """draw an oval on Surface surf
@@ -328,7 +366,7 @@ class RacerCar(Sprite):
         #  logg = logging.getLogger(f"c.{__name__}._rotate_car_image")
         #  logg.info(f"Start _rotate_car_image")
         #  if 360 % self.dir_step != 0:
-            #  logg.warn(f"A dir_step that is not divisor of 360 is a bad idea")
+        #  logg.warn(f"A dir_step that is not divisor of 360 is a bad idea")
 
         self.rot_car_image = {}
         self.rot_car_rect = {}
