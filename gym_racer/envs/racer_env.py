@@ -257,9 +257,16 @@ class RacerEnv(gym.Env):
             error = 360 - error
         #  logg.debug(f"direction {self.racer_car.direction} has error of {error:.4f}")
 
+        # error goes from 0 (good) to 180 (bad)
         reward = 90 - error
         # MAYBE a sigmoid-like shape
-        # TODO proportional to speed
+
+        # scale it from -1 to 1
+        reward /= 90
+
+        # make it proportional to speed
+        reward *= self.racer_car.speed
+
         return reward, False
 
     def _collide_sensor_array(self):
@@ -481,7 +488,7 @@ class RacerEnv(gym.Env):
 
         # reward text
         if not reward is None:
-            reward_val = f"{reward}"
+            reward_val = f"{reward:.2f}"
         else:
             reward_val = f"-"
         text_info_reward = self.main_font.render(
