@@ -1,7 +1,15 @@
 Add to dynamic sidebar an image of the action performed
 
-Make reward proportional to speed
+Pass sensor specifics from constructor
 
-Add attribute for reward scale
+Publish on PyPi
 
-Let the lidar stop colliding at the first 0 on a line
+### Useful links regarding envs
+
+* https://github.com/openai/gym/tree/master/docs
+* https://medium.com/@apoddar573/making-your-own-custom-environment-in-gym-c3b65ff8cdaa
+* https://towardsdatascience.com/creating-a-custom-openai-gym-environment-for-stock-trading-be532be3910e
+* https://github.com/openai/gym-soccer
+* https://www.novatec-gmbh.de/en/blog/creating-a-gym-environment/
+* https://github.com/phossen/gym-bubbleshooter
+* https://github.com/openai/gym/tree/master/gym/spaces

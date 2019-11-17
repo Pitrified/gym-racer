@@ -180,39 +180,61 @@ def test_interactive_env(args):
 def test_automatic_env(args):
     """
     """
-    logg = getMyLogger(f"c.{__name__}.test_automatic_env", "DEBUG")
-    #  logg = getMyLogger(f"c.{__name__}.test_automatic_env", "INFO")
+    #  logg = getMyLogger(f"c.{__name__}.test_automatic_env", "DEBUG")
+    logg = getMyLogger(f"c.{__name__}.test_automatic_env", "INFO")
     logg.info(f"Start test_automatic_env")
 
     fps = args.fps
     num_frames = args.num_frames
 
-    #  racer_env = gym.make("racer-v0")
-    racer_env = gym.make("racer-v0", render_mode="human")
+    mode = "human"
+    #  mode = "console"
+    #  sat = "diamond"
+    sat = "lidar"
 
-    logg.debug(f"Action Space {racer_env.action_space}")
-    logg.debug(f"State Space {racer_env.observation_space}")
+    racer_env = gym.make("racer-v0", sensor_array_type=sat, render_mode=mode)
+
+    logg.info(f"Action Space {racer_env.action_space}")
+    logg.info(f"State Space {racer_env.observation_space}")
 
     going = True
     i = 0
+    tot_frame_times = 0
+    tot_step_times = 0
+    tot_render_times = 0
     while going:
         logg.debug(f"----------    ----------    New frame    ----------    ----------")
 
-        start_frame = timer()
+        t01 = timer()
 
         action = racer_env.action_space.sample()
-        logg.debug(f"Do the action {action}")
 
-        mid_frame = timer()
+        t02 = timer()
 
         obs, reward, done, info = racer_env.step(action)
-        racer_env.render(mode="human", reward=reward)
-        #  racer_env.render(mode="console", reward=reward)
 
-        end_frame = timer()
-        logg.debug(f"Time for sample {mid_frame-start_frame:.6f} s")
-        logg.debug(f"Time for step   {end_frame-mid_frame:.6f} s")
-        logg.debug(f"Time for frame  {end_frame-start_frame:.6f} s")
+        t03 = timer()
+
+        racer_env.render(mode=mode, reward=reward)
+
+        t04 = timer()
+
+        logg.debug(f"Do the action {action}")
+        logg.debug(f"obs shape {obs.shape}")
+
+        logg.debug(f"Time for sample {t02-t01:.6f} s")
+
+        step_time = t03 - t02
+        logg.debug(f"Time for step   {step_time:.6f} s")
+        tot_step_times += step_time
+
+        render_time = t04 - t03
+        logg.debug(f"Time for render {render_time:.6f} s")
+        tot_render_times += render_time
+
+        frame_time = t04 - t01
+        logg.debug(f"Time for frame  {frame_time:.6f} s")
+        tot_frame_times += frame_time
 
         recap = ""
         recap += f"Car state: x {info['car_pos_x']}"
@@ -228,6 +250,15 @@ def test_automatic_env(args):
             i += 1
             if i == num_frames:
                 going = False
+
+    mean_step_time = tot_step_times / i
+    logg.info(f"Average time for step   {mean_step_time:.6f} s")
+
+    mean_render_time = tot_render_times / i
+    logg.info(f"Average time for render {mean_render_time:.6f} s")
+
+    mean_frame_time = tot_frame_times / i
+    logg.info(f"Average time for frame  {mean_frame_time:.6f} s")
 
 
 if __name__ == "__main__":
