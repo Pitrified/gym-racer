@@ -180,8 +180,8 @@ def test_interactive_env(args):
 def test_automatic_env(args):
     """
     """
-    #  logg = getMyLogger(f"c.{__name__}.test_automatic_env", "DEBUG")
-    logg = getMyLogger(f"c.{__name__}.test_automatic_env", "INFO")
+    logg = getMyLogger(f"c.{__name__}.test_automatic_env", "DEBUG")
+    #  logg = getMyLogger(f"c.{__name__}.test_automatic_env", "INFO")
     logg.info(f"Start test_automatic_env")
 
     fps = args.fps

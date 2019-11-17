@@ -283,19 +283,38 @@ class RacerEnv(gym.Env):
         m = self.curr_sa.shape[0]
         n = self.curr_sa.shape[1]
         self.sa_collisions = np.zeros((m, n), dtype=np.uint8)
-        for i, row in enumerate(self.curr_sa):
-            for j, s_pos in enumerate(row):
-                #  logg.debug(f"s_pos {s_pos.shape} : {s_pos}")
-                # check that the pos is inside the field
-                if (0 <= s_pos[0] < self.field_wid) and (
-                    0 <= s_pos[1] < self.field_hei
-                ):
-                    # extract the value of the map (road[1] - noroad[0]) at that pos
-                    self.sa_collisions[i, j] = self.racer_map.raw_map[
-                        s_pos[0], s_pos[1]
-                    ]
-                    # TODO for the lidar, when the first 0 is found on a line,
-                    # there is no need to keep colliding along that ray
+
+        # need to collide the entire matrix
+        if self.sensor_array_type == "diamond":
+            for i, row in enumerate(self.curr_sa):
+                for j, s_pos in enumerate(row):
+                    #  logg.debug(f"s_pos {s_pos.shape} : {s_pos}")
+                    # check that the pos is inside the field
+                    if (0 <= s_pos[0] < self.field_wid) and (
+                        0 <= s_pos[1] < self.field_hei
+                    ):
+                        # extract the value of the map (road[1] - noroad[0]) at that pos
+                        self.sa_collisions[i, j] = self.racer_map.raw_map[
+                            s_pos[0], s_pos[1]
+                        ]
+
+        # for the lidar, when the first 0 is found on a line,
+        # there is no need to keep colliding along that ray
+        elif self.sensor_array_type == "lidar":
+            for i, row in enumerate(self.curr_sa):
+                for j, s_pos in enumerate(row):
+                    # check that the pos is inside the field
+                    if (0 <= s_pos[0] < self.field_wid) and (
+                        0 <= s_pos[1] < self.field_hei
+                    ):
+                        # extract the value of the map (road[1] - noroad[0]) at that pos
+                        road = self.racer_map.raw_map[s_pos[0], s_pos[1]]
+                        if road == 0:
+                            break
+                        self.sa_collisions[i, j] = road
+
+        else:
+            raise ValueError(f"Unknown sensor_array_type {self.sensor_array_type}")
 
     def _analyze_collisions(self):
         """parse the collision matrix into obs
