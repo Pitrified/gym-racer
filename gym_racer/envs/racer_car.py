@@ -21,6 +21,7 @@ class RacerCar(Sprite):
         direction=0,
         sensor_array_type="lidar",
         render_mode="human",
+        sensor_array_params=None,
     ):
         #  logg = logging.getLogger(f"c.{__name__}.__init__")
         #  logg.info(f"Start init RacerCar")
@@ -34,6 +35,7 @@ class RacerCar(Sprite):
 
         self.sensor_array_type = sensor_array_type
         self.render_mode = render_mode
+        self.sensor_array_params = sensor_array_params
 
         self.direction = direction  # in degrees
         #  self.dir_step = 3
@@ -183,12 +185,12 @@ class RacerCar(Sprite):
         #  logg.debug(f"Start _create_sensor_array_template")
 
         if self.sensor_array_type == "diamond":
-            # create a grid, rotated by 45 degrees
-            self.viewfield_size = 20  # number of rows/columns in the sensor
-            #  self.viewfield_size = 4  # number of rows/columns in the sensor
-            #  self.viewfield_size = 60  # number of rows/columns in the sensor
-            self.viewfield_step = 10  # spacing between the dots
-            #  self.viewfield_step = 5  # spacing between the dots
+            if self.sensor_array_params is None:
+                self.viewfield_size = 20  # number of rows/columns in the sensor
+                self.viewfield_step = 10  # spacing between the dots
+            else:
+                self.viewfield_size = self.sensor_array_params["viewfield_size"]
+                self.viewfield_step = self.sensor_array_params["viewfield_step"]
 
             sat = []
             for i in range(0, self.viewfield_size):
@@ -202,11 +204,18 @@ class RacerCar(Sprite):
             #  logg.debug(f"shape sensor_array_template {sat.shape}")
 
         elif self.sensor_array_type == "lidar":
-            self.ray_num = 7  # number of rays per side
+            if self.sensor_array_params is None:
+                self.ray_num = 7  # number of rays per side
+                self.ray_step = 15  # distance between sensors along a ray
+                self.ray_sensors_per_ray = 20  # number of sensors along a ray
+                self.ray_max_angle = 70  # angle to sweep left/right
+            else:
+                self.ray_num = self.sensor_array_params["ray_num"]
+                self.ray_step = self.sensor_array_params["ray_step"]
+                self.ray_sensors_per_ray = self.sensor_array_params["ray_sensors_per_ray"]
+                self.ray_max_angle = self.sensor_array_params["ray_max_angle"]
+
             self.tot_ray_num = self.ray_num * 2 + 1
-            self.ray_step = 15  # distance between sensors along a ray
-            self.ray_sensors_per_ray = 20  # number of sensors along a ray
-            self.ray_max_angle = 70  # angle to sweep left/right
             self.ray_angle = self.ray_max_angle / self.ray_num
 
             # create the horizontal ray

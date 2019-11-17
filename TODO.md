@@ -1,8 +1,8 @@
 Add to dynamic sidebar an image of the action performed
 
-Pass sensor specifics from constructor
-
 Publish on PyPi
+
+Learn about tests
 
 ### Useful links regarding envs
 

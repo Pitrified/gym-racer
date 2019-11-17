@@ -186,13 +186,27 @@ def test_automatic_env(args):
 
     fps = args.fps
     num_frames = args.num_frames
+    clock = pygame.time.Clock()
 
     mode = "human"
     #  mode = "console"
-    #  sat = "diamond"
-    sat = "lidar"
+    sat = "diamond"
+    #  sat = "lidar"
 
-    racer_env = gym.make("racer-v0", sensor_array_type=sat, render_mode=mode)
+    sensor_array_params = {}
+    sensor_array_params["ray_num"] = 7
+    sensor_array_params["ray_step"] = 10
+    sensor_array_params["ray_sensors_per_ray"] = 13
+    sensor_array_params["ray_max_angle"] = 130
+    sensor_array_params["viewfield_size"] = 30
+    sensor_array_params["viewfield_step"] = 8
+
+    racer_env = gym.make(
+        "racer-v0",
+        sensor_array_type=sat,
+        render_mode=mode,
+        sensor_array_params=sensor_array_params,
+    )
 
     logg.info(f"Action Space {racer_env.action_space}")
     logg.info(f"State Space {racer_env.observation_space}")
@@ -235,6 +249,8 @@ def test_automatic_env(args):
         frame_time = t04 - t01
         logg.debug(f"Time for frame  {frame_time:.6f} s")
         tot_frame_times += frame_time
+
+        #  clock.tick(fps)
 
         recap = ""
         recap += f"Car state: x {info['car_pos_x']}"

@@ -20,7 +20,12 @@ class RacerEnv(gym.Env):
     reward_range = (-float("inf"), float("inf"))
     # TODO how to advertise sensor_array_type properly?
 
-    def __init__(self, sensor_array_type="lidar", render_mode="console"):
+    def __init__(
+        self,
+        sensor_array_type="lidar",
+        render_mode="console",
+        sensor_array_params=None,
+    ):
         """
         """
         #  logg = getMyLogger(f"c.{__class__.__name__}.__init__")
@@ -28,6 +33,7 @@ class RacerEnv(gym.Env):
 
         self.sensor_array_type = sensor_array_type
         self.render_mode = render_mode
+        self.sensor_array_params = sensor_array_params
 
         # racing field dimensions
         self.field_wid = 900
@@ -49,7 +55,9 @@ class RacerEnv(gym.Env):
 
         # setup the car
         self.racer_car = RacerCar(
-            sensor_array_type=self.sensor_array_type, render_mode=self.render_mode,
+            sensor_array_type=self.sensor_array_type,
+            render_mode=self.render_mode,
+            sensor_array_params=self.sensor_array_params,
         )
 
         # add the car to the list of sprites to render
@@ -264,8 +272,8 @@ class RacerEnv(gym.Env):
         # scale it from -1 to 1
         reward /= 90
 
-        # make it proportional to speed
-        reward *= self.racer_car.speed
+        # make it proportional to speed squared
+        reward *= self.racer_car.speed * self.racer_car.speed
 
         return reward, False
 
