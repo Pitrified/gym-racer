@@ -17,6 +17,7 @@ from gym_racer.envs.racer_map import RacerMap
 
 class RacerEnv(gym.Env):
     metadata = {"render.modes": ["human", "console"]}
+    reward_range = (-float("inf"), float("inf"))
     # TODO how to advertise sensor_array_type properly?
 
     def __init__(self, sensor_array_type="lidar", render_mode="console"):
@@ -127,8 +128,15 @@ class RacerEnv(gym.Env):
         #  logg = getMyLogger(f"c.{__class__.__name__}.reset")
         #  logg.debug(f"Start reset")
 
+        #  pick a random segment of the map and place the car there
         direction, pos_x, pos_y = choice(self.racer_map.seg_info)
         self.racer_car.reset(pos_x, pos_y, direction)
+
+        # get collisions from sensor array
+        self._collide_sensor_array()
+
+        # analyze the collisions
+        return self._analyze_collisions()
 
     def render(self, mode="console", close=False, reward=None):
         """Render the environment to the screen
@@ -279,6 +287,8 @@ class RacerEnv(gym.Env):
                     self.sa_collisions[i, j] = self.racer_map.raw_map[
                         s_pos[0], s_pos[1]
                     ]
+                    # TODO for the lidar, when the first 0 is found on a line,
+                    # there is no need to keep colliding along that ray
 
     def _analyze_collisions(self):
         """parse the collision matrix into obs
