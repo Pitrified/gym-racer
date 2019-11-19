@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 # import gym_racer
 setuptools.setup(
     name="gym_racer",
-    version="0.0.1",
+    version="0.0.2",
     author="Pitrified",
     author_email="pitrified.git@gmail.com",
     description="OpenAI gym environment of a racing car.",
