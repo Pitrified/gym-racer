@@ -59,8 +59,8 @@ An environment in `console` mode cannot be rendered as `human`.
 The render mode can be set by passing it in the call to `gym.make`:
 
 ```python
-mode = "console"   # default
-#  mode = "human"
+mode = "human"       # default
+#  mode = "console"
 racer_env = gym.make(
     "racer-v0",
     render_mode=mode,

@@ -23,7 +23,7 @@ class RacerEnv(gym.Env):
     def __init__(
         self,
         sensor_array_type="lidar",
-        render_mode="console",
+        render_mode="human",
         sensor_array_params=None,
     ):
         """
