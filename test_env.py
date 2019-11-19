@@ -190,8 +190,8 @@ def test_automatic_env(args):
 
     mode = "human"
     #  mode = "console"
-    sat = "diamond"
-    #  sat = "lidar"
+    #  sat = "diamond"
+    sat = "lidar"
 
     sensor_array_params = {}
     sensor_array_params["ray_num"] = 7
@@ -262,8 +262,8 @@ def test_automatic_env(args):
 
         going = not done
 
+        i += 1
         if num_frames > 0:
-            i += 1
             if i == num_frames:
                 going = False
 
