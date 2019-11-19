@@ -1,11 +1,11 @@
-from setuptools import setup
+import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 # define the name to import the env
 # import gym_racer
-setup(
+setuptools.setup(
     name="gym_racer",
     version="0.0.1",
     author="Pitrified",
