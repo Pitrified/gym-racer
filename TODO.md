@@ -1,9 +1,5 @@
 Add to dynamic sidebar an image of the action performed
 
-Publish on PyPi
-
-Learn about tests
-
 ### Useful links regarding envs
 
 * https://github.com/openai/gym/tree/master/docs
@@ -13,3 +9,7 @@ Learn about tests
 * https://www.novatec-gmbh.de/en/blog/creating-a-gym-environment/
 * https://github.com/phossen/gym-bubbleshooter
 * https://github.com/openai/gym/tree/master/gym/spaces
+
+### New fancy way to model the car
+
+* https://en.wikipedia.org/wiki/Ackermann_steering_geometry
