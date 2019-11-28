@@ -19,6 +19,8 @@ class RacerCar(Sprite):
         pos_x=0,
         pos_y=0,
         direction=0,
+        dir_step = 3,
+        speed_step = 1,
         sensor_array_type="lidar",
         render_mode="human",
         sensor_array_params=None,
@@ -38,11 +40,10 @@ class RacerCar(Sprite):
         self.sensor_array_params = sensor_array_params
 
         self.direction = direction  # in degrees
-        #  self.dir_step = 3
-        self.dir_step = 15
+        self.dir_step = dir_step
 
         self.speed = 0
-        self.speed_step = 1
+        self.speed_step = speed_step
         # viscous drag coefficient
         self.drag_coeff = 0.5
 

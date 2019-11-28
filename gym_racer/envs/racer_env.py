@@ -25,12 +25,16 @@ class RacerEnv(gym.Env):
         sensor_array_type="lidar",
         render_mode="human",
         sensor_array_params=None,
+        dir_step=3,
+        speed_step=1,
     ):
         """
         """
         #  logg = getMyLogger(f"c.{__class__.__name__}.__init__")
         #  logg.info(f"Start init RacerEnv")
 
+        self.dir_step = dir_step
+        self.speed_step = speed_step
         self.sensor_array_type = sensor_array_type
         self.render_mode = render_mode
         self.sensor_array_params = sensor_array_params
@@ -55,6 +59,8 @@ class RacerEnv(gym.Env):
 
         # setup the car
         self.racer_car = RacerCar(
+            dir_step=self.dir_step,
+            speed_step=self.speed_step,
             sensor_array_type=self.sensor_array_type,
             render_mode=self.render_mode,
             sensor_array_params=self.sensor_array_params,
@@ -182,6 +188,8 @@ class RacerEnv(gym.Env):
 
         elif mode == "console":
             info_str = f"State of the env:"
+            info_str += f" speed: {self.racer_car.speed}"
+            info_str += f" dir: {self.racer_car.direction}"
             info_str += f"\tReward: {reward}"
             print(info_str)
 
@@ -234,6 +242,10 @@ class RacerEnv(gym.Env):
         # out of the map
         if len(hit_directions) == 0:
             return 0, True
+
+        # if it is in the map, check that is moving
+        if self.racer_car.speed < 0.0001:
+            return -1, False
 
         # too many hits, your road is weird, cap them at 2 segments
         elif len(hit_directions) > 2:
