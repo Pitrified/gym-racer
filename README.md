@@ -2,6 +2,19 @@
 
 OpenAI gym environment of a racing car.
 
+## Install
+
+The repo is uploaded as a package on pip, but it is not updated that often.
+
+Clone the repo and install it locally
+```bash
+git clone https://github.com/Pitrified/gym-racer.git
+cd gym-racer
+pip install -e .
+```
+
+## Environment
+
 #### Action space
 
 The action space is a combination of two discrete action spaces:
@@ -73,3 +86,4 @@ Info is a dict with some car details:
 ```python
 keys = ["car_pos_x", "car_pos_y", "car_dir", "car_speed"]
 ```
+
