@@ -1,23 +1,21 @@
-import argparse
-import logging
-import numpy as np
 from random import seed
 from timeit import default_timer as timer
+import argparse
+import logging
+import numpy as np  # type: ignore
 
-import pygame
+import pygame  # type: ignore
+import gym  # type: ignore
 
-import gym
-
-import gym_racer
-from gym_racer.envs.utils import getMyLogger
+# gym_racer must be imported, so that the register function gets called
+import gym_racer  # noqa: F401
 
 
 def parse_arguments():
-    """Setup CLI interface
-    """
+    """Setup CLI interface"""
     parser = argparse.ArgumentParser(description="Test the racer env")
 
-    parser.add_argument("-fps", "--fps", type=int, default=1, help="frame per second")
+    parser.add_argument("-fps", "--fps", type=int, default=30, help="frame per second")
     parser.add_argument(
         "-s", "--rand_seed", type=int, default=-1, help="random seed to use"
     )
@@ -31,6 +29,22 @@ def parse_arguments():
     parser.add_argument(
         "-i", "--interactive", action="store_true", help="start interactive env"
     )
+    parser.add_argument(
+        "-rm",
+        "--render_mode",
+        type=str,
+        default="human",
+        choices=["human", "console"],
+        help="Render mode to use for the env.",
+    )
+    parser.add_argument(
+        "-sat",
+        "--sensor_array_type",
+        type=str,
+        default="lidar",
+        choices=["lidar", "diamond"],
+        help="Sensor array type to use for the env.",
+    )
 
     # last line to parse the args
     args = parser.parse_args()
@@ -38,8 +52,7 @@ def parse_arguments():
 
 
 def setup_logger(logLevel="DEBUG"):
-    """Setup logger that outputs to console for the module
-    """
+    """Setup logger that outputs to console for the module"""
     logroot = logging.getLogger("c")
     logroot.propagate = False
     logroot.setLevel(logLevel)
@@ -64,7 +77,7 @@ def setup_logger(logLevel="DEBUG"):
     # example log line
     logg = logging.getLogger(f"c.{__name__}.setup_logger")
     logg.setLevel("INFO")
-    logg.debug(f"Done setting up logger")
+    logg.debug("Done setting up logger")
 
 
 def setup_env():
@@ -83,7 +96,7 @@ def setup_env():
 
     # build command string to repeat this run
     # NOTE this does not work for flags, but whatever
-    recap = f"python3 test_env.py"
+    recap = "python3 test_env.py"
     for a, v in args._get_kwargs():
         if a == "rand_seed":
             recap += f" --rand_seed {myseed}"
@@ -96,16 +109,18 @@ def setup_env():
     return args
 
 
-def test_interactive_env(args):
-    """
-    """
-    logg = getMyLogger(f"c.{__name__}.test_interactive_env", "DEBUG")
-    logg.info(f"Start test_interactive_env")
+def test_interactive_env(num_frames, fps, sensor_array_type):
+    """"""
+    logg = logging.getLogger(f"c.{__name__}.test_interactive_env")
+    logg.setLevel("DEBUG")
+    logg.info("Start test_interactive_env")
 
-    fps = args.fps
-    num_frames = args.num_frames
-
-    racer_env = gym.make("racer-v0", render_mode="human")
+    # create the env
+    racer_env = gym.make(
+        "racer-v0",
+        render_mode="human",
+        sensor_array_type=sensor_array_type,
+    )
 
     # clock for interactive play
     clock = pygame.time.Clock()
@@ -114,7 +129,7 @@ def test_interactive_env(args):
     going = True
     i = 0
     while going:
-        logg.info(f"----------    ----------    New frame    ----------    ----------")
+        logg.info("----------    ----------    New frame    ----------    ----------")
 
         start_frame = timer()
 
@@ -149,7 +164,7 @@ def test_interactive_env(args):
         else:  # nop
             action = [0, 0]
 
-        logg.debug(f"Do the action {action}")
+        logg.info(f"Do the action {action}")
 
         mid_frame = timer()
 
@@ -177,21 +192,11 @@ def test_interactive_env(args):
                 going = False
 
 
-def test_automatic_env(args):
-    """
-    """
-    #  logg = getMyLogger(f"c.{__name__}.test_automatic_env", "DEBUG")
-    logg = getMyLogger(f"c.{__name__}.test_automatic_env", "INFO")
-    logg.info(f"Start test_automatic_env")
-
-    fps = args.fps
-    num_frames = args.num_frames
-    clock = pygame.time.Clock()
-
-    mode = "human"
-    #  mode = "console"
-    #  sat = "diamond"
-    sat = "lidar"
+def test_automatic_env(num_frames, render_mode, sensor_array_type) -> None:
+    """"""
+    logg = logging.getLogger(f"c.{__name__}.test_automatic_env")
+    logg.setLevel("INFO")
+    logg.info("Start test_automatic_env")
 
     sensor_array_params = {}
     sensor_array_params["ray_num"] = 7
@@ -203,8 +208,8 @@ def test_automatic_env(args):
 
     racer_env = gym.make(
         "racer-v0",
-        sensor_array_type=sat,
-        render_mode=mode,
+        sensor_array_type=sensor_array_type,
+        render_mode=render_mode,
         sensor_array_params=sensor_array_params,
     )
 
@@ -213,11 +218,11 @@ def test_automatic_env(args):
 
     going = True
     i = 0
-    tot_frame_times = 0
-    tot_step_times = 0
-    tot_render_times = 0
+    tot_frame_times: float = 0
+    tot_step_times: float = 0
+    tot_render_times: float = 0
     while going:
-        logg.debug(f"----------    ----------    New frame    ----------    ----------")
+        logg.debug("----------    ----------    New frame    ----------    ----------")
 
         t01 = timer()
 
@@ -229,14 +234,15 @@ def test_automatic_env(args):
 
         t03 = timer()
 
-        racer_env.render(mode=mode, reward=reward)
+        racer_env.render(mode=render_mode, reward=reward)
 
         t04 = timer()
 
         logg.debug(f"Do the action {action}")
         logg.debug(f"obs shape {obs.shape}")
 
-        logg.debug(f"Time for sample {t02-t01:.6f} s")
+        sample_time = t02 - t01
+        logg.debug(f"Time for sample {sample_time:.6f} s")
 
         step_time = t03 - t02
         logg.debug(f"Time for step   {step_time:.6f} s")
@@ -249,8 +255,6 @@ def test_automatic_env(args):
         frame_time = t04 - t01
         logg.debug(f"Time for frame  {frame_time:.6f} s")
         tot_frame_times += frame_time
-
-        #  clock.tick(fps)
 
         recap = ""
         recap += f"Car state: x {info['car_pos_x']}"
@@ -279,7 +283,13 @@ def test_automatic_env(args):
 
 if __name__ == "__main__":
     args = setup_env()
-    if args.interactive:
-        test_interactive_env(args)
+    fps = args.fps
+    interactive = args.interactive
+    num_frames = args.num_frames
+    render_mode = args.render_mode
+    sensor_array_type = args.sensor_array_type
+
+    if interactive:
+        test_interactive_env(num_frames, fps, sensor_array_type)
     else:
-        test_automatic_env(args)
+        test_automatic_env(num_frames, render_mode, sensor_array_type)
